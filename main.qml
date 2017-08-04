@@ -33,6 +33,12 @@ ApplicationWindow {
         focus : visible // to receive focus and capture key events when visible
     }
 
+    MouseArea {
+        id: zoom_mouse_area
+        anchors.fill: parent
+        enabled: zoom_button.checked
+    }
+
     Canvas {
         id: canvas
         anchors.fill: parent
@@ -60,6 +66,7 @@ ApplicationWindow {
         MouseArea {
             id: canvas_mouse_area
             anchors.fill: parent
+            enabled: draw_button.checked
             onPressed: {
                 canvas.lastX = mouseX
                 canvas.lastY = mouseY
@@ -70,23 +77,6 @@ ApplicationWindow {
         }
     }
 
-    MouseArea {
-        id: bottom_mouse_area
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        hoverEnabled: true
-        height: bottom_menu_height
-        onEntered: {
-            bottom_timer.stop()
-            settingsPage.opacity = 1
-        }
-        onExited: {
-            bottom_timer.start()
-        }
-
-
-    }
 
     Rectangle {
         id: settingsPage
@@ -95,11 +85,14 @@ ApplicationWindow {
         anchors.right: parent.right
         height: bottom_menu_height
 
-        opacity: 0 //bottom_mouse_area.containsMouse ? true : false
-
+        opacity: 0
+        Behavior on opacity { PropertyAnimation {
+                duration: 800
+                easing.type: Easing.OutCubic
+            } }
         Timer {
             id: bottom_timer
-            interval: 7000
+            interval: 4000
             onTriggered: parent.opacity = 0
         }
 
@@ -109,94 +102,107 @@ ApplicationWindow {
         property alias gain: gain_slider.value
         property alias auto: auto_checkbox.checked
 
-        Row {
-            spacing: 80
-            Column {
-                //anchors.fill: parent
-
-                spacing: 6
-                padding: 6
-
-                BoxSlider {
-                    id: exposure_slider
-                    width: 500
-                    height: 50
-                    text: "Exposure time (ms)"
-                    from: 1
-                    to: 1000
-                    value: 50
-                }
-
-                BoxSlider {
-                    id: gain_slider
-                    width: 500
-                    height: 50
-                    text: "Gain (db)"
-                    from: 0
-                    to: 40
-                    value: 0
-                }
-
+        MouseArea {
+            id: bottom_mouse_area
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: {
+                bottom_timer.stop()
+                settingsPage.opacity = 1
+            }
+            onExited: {
+                bottom_timer.start()
             }
 
-            CheckBox {
-                id: auto_checkbox
-                anchors.verticalCenter: parent.verticalCenter
-                width: 100
-                height: 50
-                text: "Auto"
-            }
+            Row {
+                spacing: 80
+                Column {
+                    //anchors.fill: parent
 
-            Column {
-                spacing: 20
+                    spacing: 6
+                    padding: 6
 
-                Button {
+                    BoxSlider {
+                        id: exposure_slider
+                        width: 500
+                        height: 50
+                        text: "Exposure time (ms)"
+                        from: 1
+                        to: 1000
+                        value: 50
+                    }
+
+                    BoxSlider {
+                        id: gain_slider
+                        width: 500
+                        height: 50
+                        text: "Gain (db)"
+                        from: 0
+                        to: 40
+                        value: 0
+                    }
+
+                }
+
+                CheckBox {
+                    id: auto_checkbox
+                    anchors.verticalCenter: parent.verticalCenter
                     width: 100
                     height: 50
-                    id: draw_button
-                    text: "Draw"
-                    checkable: true
-                    onCheckedChanged: {
-                        canvas_mouse_area.enabled = checked
-                        if(checked) zoom_button.checked = false
+                    text: "Auto"
+                }
+
+                Column {
+                    spacing: 20
+
+                    Button {
+                        width: 100
+                        height: 50
+                        id: draw_button
+                        text: "Draw"
+                        checkable: true
+                        onCheckedChanged: {
+                            if(checked) zoom_button.checked = false
+                        }
+                    }
+
+                    Button {
+                        width: 100
+                        height: 50
+                        id: clear_button
+                        text: "Erase"
+                        onClicked: canvas.clear()
+                    }
+
+                }
+
+                Column {
+                    spacing: 20
+
+                    Button {
+                        width: 100
+                        height: 50
+                        id: zoom_button
+                        text: "Zoom"
+                        checkable: true
+                        onCheckedChanged: {
+                            //canvas_mouse_area.enabled = checked
+                            if(checked) draw_button.checked = false
+                        }
+                    }
+
+                    Button {
+                        width: 100
+                        height: 50
+                        id: reset_button
+                        text: "Reset"
+                        onClicked: {
+                            zoom_button.checked = false
+                        }
                     }
                 }
 
-                Button {
-                    width: 100
-                    height: 50
-                    id: clear_button
-                    text: "Erase"
-                    onClicked: canvas.clear()
-                }
-
             }
-
-            Column {
-                spacing: 20
-
-                Button {
-                    width: 100
-                    height: 50
-                    id: zoom_button
-                    text: "Zoom"
-                    checkable: true
-                    onCheckedChanged: {
-                        //canvas_mouse_area.enabled = checked
-                        if(checked) draw_button.checked = false
-                    }
-                }
-
-                Button {
-                    width: 100
-                    height: 50
-                    id: reset_button
-                    text: "Reset"
-                    //onClicked: canvas.clear()
-                }
-            }
-
-
 
         }
     }
@@ -209,29 +215,54 @@ ApplicationWindow {
         anchors.right: parent.right
         height: top_menu_height
 
-        opacity: top_mouse_area.containsMouse ? true : false
+        opacity: 0
+        Behavior on opacity { PropertyAnimation {
+                duration: 800
+                easing.type: Easing.OutCubic
+            } }
 
         color: "#77ffffff"
 
-        Row {
-            anchors.fill: parent
-            spacing: 50
-            padding: 20
+        Timer {
+            id: top_timer
+            interval: 4000
+            onTriggered: parent.opacity = 0
+        }
 
-            ComboBox {
-                id: camera_combo_box
-                model: ["Camera1", "Camera2"]
+        MouseArea {
+            id: top_mouse_area
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: {
+                top_timer.stop()
+                topSettings.opacity = 1
+            }
+            onExited: {
+                top_timer.start()
+            }
+
+            Row {
+                anchors.fill: parent
+                spacing: 50
+                padding: 20
+
+                ComboBox {
+                    id: camera_combo_box
+                    model: ["Camera1", "Camera2"]
+                }
+
+                Button {
+                    id: freeze_button
+                    text: "Freeze"
+                }
+
+                Button {
+                    id: save_button
+                    text: "Save..."
+                }
             }
         }
 
-    }
-    MouseArea {
-        id: top_mouse_area
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        hoverEnabled: true
-        height: top_menu_height
     }
 
 }
