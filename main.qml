@@ -44,18 +44,80 @@ ApplicationWindow {
         focus : visible // to receive focus and capture key events when visible
     }
 
-    MouseArea {
-        id: zoom_mouse_area
+    Canvas {
+        id: zoom_canvas
         anchors.fill: parent
         enabled: bottom_menu.enableZoom
+        property real startX
+        property real startY
+        property real lastX
+        property real lastY
+
+        onEnabledChanged: {
+            console.log("zoom canvas " + enabled)
+        }
+
+        onPaint: {
+            var ctx = getContext('2d')
+            ctx.reset()
+            ctx.lineWidth = 1
+            ctx.strokeStyle = 'rgba(0, 0, 255, 1.0)'
+            ctx.fillStyle = 'rgba(100, 100, 255, 0.5)'
+            ctx.beginPath()
+            lastX = zoom_mouse_area.mouseX
+            lastY = zoom_mouse_area.mouseY
+            ctx.rect(startX, startY, lastX-startX, lastY-startY)
+            ctx.fillRect(startX, startY, lastX-startX, lastY-startY)
+            ctx.stroke()
+        }
+
+        function clear() {
+            var ctx = zoom_canvas.getContext('2d')
+            ctx.reset()
+            zoom_canvas.requestPaint()
+        }
+
+        Timer {
+            id: clear_zoom_timer
+            interval: 100
+            onTriggered: parent.clear()
+        }
+
+        MouseArea {
+            id: zoom_mouse_area
+            anchors.fill: parent
+            enabled: bottom_menu.enableZoom
+
+            onPressed: {
+                console.log("pressed " + mouseX + " " + mouseY)
+                zoom_canvas.startX = mouseX
+                zoom_canvas.startY = mouseY
+                zoom_canvas.requestPaint()
+            }
+            onPositionChanged: {
+                console.log("position changed")
+                zoom_canvas.requestPaint()
+            }
+            onReleased: {
+                zoom_canvas.clear()
+                clear_zoom_timer.start()
+                console.log("cleared zoom canvas")
+                // TODO: add actual zooming here
+            }
+        }
     }
 
     Canvas {
         id: canvas
         anchors.fill: parent
+        enabled: bottom_menu.enableDraw
         property real lastX
         property real lastY
         property color color: "red"
+
+        onEnabledChanged: {
+            console.log("draw canvas " + enabled)
+        }
 
         onPaint: {
             var ctx = getContext('2d')
@@ -78,9 +140,11 @@ ApplicationWindow {
             id: canvas_mouse_area
             anchors.fill: parent
             enabled: bottom_menu.enableDraw
+
             onPressed: {
                 canvas.lastX = mouseX
                 canvas.lastY = mouseY
+                canvas.requestPaint()
             }
             onPositionChanged: {
                 canvas.requestPaint()
