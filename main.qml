@@ -17,7 +17,11 @@ ApplicationWindow {
     Camera {
         id: camera
 
-        imageProcessing.whiteBalanceMode: CameraImageProcessing.WhiteBalanceFlash
+        imageProcessing {
+            whiteBalanceMode: CameraImageProcessing.WhiteBalanceManual
+            denoisingLevel: -1
+            sharpeningLevel: -1
+        }
 
         exposure {
             exposureCompensation: -1.0
@@ -150,6 +154,10 @@ ApplicationWindow {
                     width: 100
                     height: 50
                     text: "Auto"
+                    onCheckedChanged: {
+                        exposure_slider.enabled = !checked
+                        gain_slider.enabled = !checked
+                    }
                 }
 
                 Column {
@@ -248,7 +256,15 @@ ApplicationWindow {
 
                 ComboBox {
                     id: camera_combo_box
-                    model: ["Camera1", "Camera2"]
+                    width: 400
+
+                    model: QtMultimedia.availableCameras
+                    textRole: 'displayName'
+                    onCurrentIndexChanged: {
+                        //console.log(model[currentIndex].displayName)
+                        //console.log(model[currentIndex].deviceId)
+                        camera.deviceId = model[currentIndex].deviceId
+                    }
                 }
 
                 Button {
