@@ -8,6 +8,12 @@ Item {
     id: bottomMenu
     opacity: 0
 
+    property alias enableDraw: draw_button.checked
+    property alias enableZoom: zoom_button.checked
+    property alias exposure_time: exposure_slider.value
+    property alias gain: gain_slider.value
+    property alias auto: auto_checkbox.checked
+
     Rectangle {
         anchors.fill: parent
 
@@ -23,9 +29,6 @@ Item {
 
         opacity: 0.7
 
-        property alias exposure_time: exposure_slider.value
-        property alias gain: gain_slider.value
-        property alias auto: auto_checkbox.checked
 
         MouseArea {
             id: bottom_mouse_area
@@ -76,6 +79,7 @@ Item {
                     width: 100
                     height: 50
                     text: "Auto"
+                    //checked: true
                     onCheckedChanged: {
                         exposure_slider.enabled = !checked
                         gain_slider.enabled = !checked

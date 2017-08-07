@@ -1,7 +1,7 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.0
 import QtQuick.Layouts 1.3
-import QtMultimedia 5.5
+import QtMultimedia 5.8
 import Qt.labs.settings 1.0
 
 ApplicationWindow {
@@ -21,9 +21,19 @@ ApplicationWindow {
         }
 
         exposure {
+            manualIso: 400
             exposureCompensation: -1.0
-            exposureMode: Camera.ExposurePortrait
+            exposureMode: Camera.ExposureManual
+            meteringMode: CameraExposure.MeteringMatrix
+            //manualShutterSpeed: bottom_menu.exposure_time
+            onManualShutterSpeedChanged: {
+                console.log("manual shutter speed " + camera.exposure.manualShutterSpeed)
+                console.log("shutter speed " + camera.exposure.shutterSpeed)
+                console.log("exposureMode " + camera.exposure.exposureMode)
+                console.log("iso " + camera.exposure.iso)
+            }
         }
+
     }
 
     VideoOutput {
@@ -37,7 +47,7 @@ ApplicationWindow {
     MouseArea {
         id: zoom_mouse_area
         anchors.fill: parent
-        enabled: zoom_button.checked
+        enabled: bottom_menu.enableZoom
     }
 
     Canvas {
@@ -67,7 +77,7 @@ ApplicationWindow {
         MouseArea {
             id: canvas_mouse_area
             anchors.fill: parent
-            enabled: draw_button.checked
+            enabled: bottom_menu.enableDraw
             onPressed: {
                 canvas.lastX = mouseX
                 canvas.lastY = mouseY
@@ -80,6 +90,7 @@ ApplicationWindow {
 
 
     TopMenu {
+        id: top_menu
         height: 70
         anchors.top: parent.top
         anchors.left: parent.left
@@ -87,10 +98,16 @@ ApplicationWindow {
     }
 
     BottomMenu {
+        id: bottom_menu
         height: 140
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
+
+        onExposure_timeChanged: {
+            console.log(exposure_time)
+            camera.exposure.manualShutterSpeed = exposure_time
+        }
     }
 
 
