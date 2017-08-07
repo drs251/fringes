@@ -28,9 +28,10 @@ Item {
         SpinBox {
             id: spinbox
             Layout.alignment: Layout.Left
-            //onValueChanged: {
-            //    slider.value = value
-            //}
+            editable: true
+            onValueChanged: {
+                slider.value = value
+            }
         }
 
         Text {

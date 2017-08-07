@@ -3,5 +3,7 @@
         <file>main.qml</file>
         <file>qtquickcontrols2.conf</file>
         <file>BoxSlider.qml</file>
+        <file>BottomMenu.qml</file>
+        <file>TopMenu.qml</file>
     </qresource>
 </RCC>
