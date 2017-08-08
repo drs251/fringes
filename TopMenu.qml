@@ -7,6 +7,9 @@ import Qt.labs.settings 1.0
 Item {
     id: topMenu
     opacity: 0
+
+    signal saveImage()
+
     Rectangle {
         anchors.fill: parent
 
@@ -56,11 +59,13 @@ Item {
                 Button {
                     id: freeze_button
                     text: "Freeze"
+                    enabled: false
                 }
 
                 Button {
                     id: save_button
                     text: "Save..."
+                    onClicked: top_menu.saveImage()
                 }
             }
         }

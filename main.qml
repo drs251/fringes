@@ -170,6 +170,15 @@ ApplicationWindow {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
+
+        onSaveImage: {
+            // https://stackoverflow.com/questions/39939565/error-saving-qml-item-as-image-to-file-using-grabtoimage
+            // https://doc.qt.io/qt-5/qml-qtquick-dialogs-filedialog.html
+            output.grabToImage(function(result) {
+                if(result.saveToFile("./something.png")) console.log("file saved")
+                else console.log("saving unsuccesful!")
+            });
+        }
     }
 
 
