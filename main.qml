@@ -4,12 +4,14 @@ import QtQuick.Layouts 1.3
 import QtMultimedia 5.8
 import Qt.labs.settings 1.0
 
+
 ApplicationWindow {
     id: root
     visible: true
     width: 1280
     height: 720
     title: "Fringes"
+
 
     Camera {
         id: camera
@@ -36,13 +38,24 @@ ApplicationWindow {
 
     }
 
+
     VideoOutput {
         id: output
         source: camera
         anchors.fill: parent
         fillMode: VideoOutput.PreserveAspectCrop
         focus : visible // to receive focus and capture key events when visible
+
+        transform: [
+            Scale {
+                id: zoomScale
+            },
+            Translate {
+                id: zoomTranslate
+            }
+        ]
     }
+
 
     Canvas {
         id: zoom_canvas
@@ -52,35 +65,25 @@ ApplicationWindow {
         property real startY
         property real lastX
         property real lastY
-
-        onEnabledChanged: {
-            console.log("zoom canvas " + enabled)
-        }
+        property real centerX
+        property real centerY
+        property real zoom_scale
+        property bool drawing: false
 
         onPaint: {
             var ctx = getContext('2d')
             ctx.reset()
-            ctx.lineWidth = 1
-            ctx.strokeStyle = 'rgba(0, 0, 255, 1.0)'
-            ctx.fillStyle = 'rgba(100, 100, 255, 0.5)'
-            ctx.beginPath()
-            lastX = zoom_mouse_area.mouseX
-            lastY = zoom_mouse_area.mouseY
-            ctx.rect(startX, startY, lastX-startX, lastY-startY)
-            ctx.fillRect(startX, startY, lastX-startX, lastY-startY)
-            ctx.stroke()
-        }
-
-        function clear() {
-            var ctx = zoom_canvas.getContext('2d')
-            ctx.reset()
-            zoom_canvas.requestPaint()
-        }
-
-        Timer {
-            id: clear_zoom_timer
-            interval: 100
-            onTriggered: parent.clear()
+            if(zoom_canvas.drawing) {
+                ctx.lineWidth = 1
+                ctx.strokeStyle = 'rgba(0, 0, 255, 1.0)'
+                ctx.fillStyle = 'rgba(100, 100, 255, 0.5)'
+                ctx.beginPath()
+                lastX = zoom_mouse_area.mouseX
+                lastY = zoom_mouse_area.mouseY
+                ctx.rect(startX, startY, lastX-startX, lastY-startY)
+                ctx.fillRect(startX, startY, lastX-startX, lastY-startY)
+                ctx.stroke()
+            }
         }
 
         MouseArea {
@@ -89,23 +92,34 @@ ApplicationWindow {
             enabled: bottom_menu.enableZoom
 
             onPressed: {
-                console.log("pressed " + mouseX + " " + mouseY)
+                zoom_canvas.drawing = true
                 zoom_canvas.startX = mouseX
                 zoom_canvas.startY = mouseY
                 zoom_canvas.requestPaint()
             }
             onPositionChanged: {
-                console.log("position changed")
                 zoom_canvas.requestPaint()
             }
             onReleased: {
-                zoom_canvas.clear()
-                clear_zoom_timer.start()
-                console.log("cleared zoom canvas")
-                // TODO: add actual zooming here
+                zoom_canvas.drawing = false
+                zoom_canvas.requestPaint()
+
+                // now the actual zooming:
+                zoom_canvas.centerX = (zoom_canvas.lastX - zoom_canvas.startX) / 2 + zoom_canvas.startX
+                zoom_canvas.centerY = (zoom_canvas.lastY - zoom_canvas.startY) / 2 + zoom_canvas.startY
+                var scaleX = zoom_mouse_area.width / Math.abs(zoom_canvas.lastX - zoom_canvas.startX)
+                var scaleY = zoom_mouse_area.height / Math.abs(zoom_canvas.lastY - zoom_canvas.startY)
+                zoom_canvas.zoom_scale = (scaleX + scaleY) / 2
+                zoomScale.origin.x = zoom_canvas.centerX
+                zoomScale.origin.y = zoom_canvas.centerY
+                zoomScale.xScale = zoom_canvas.zoom_scale
+                zoomScale.yScale = zoom_canvas.zoom_scale
+                //zoomTranslate.x = zoom_canvas.centerX
+                //zoomTranslate.y = zoom_canvas.centerY
             }
         }
     }
+
 
     Canvas {
         id: canvas
@@ -115,9 +129,6 @@ ApplicationWindow {
         property real lastY
         property color color: "red"
 
-        onEnabledChanged: {
-            console.log("draw canvas " + enabled)
-        }
 
         onPaint: {
             var ctx = getContext('2d')
@@ -161,6 +172,7 @@ ApplicationWindow {
         anchors.right: parent.right
     }
 
+
     BottomMenu {
         id: bottom_menu
         height: 140
@@ -171,6 +183,24 @@ ApplicationWindow {
         onExposure_timeChanged: {
             console.log(exposure_time)
             camera.exposure.manualShutterSpeed = exposure_time
+        }
+
+        onAuto_exposureChanged: {
+            if(auto_exposure) {
+                camera.exposure.exposureMode = CameraExposure.ExposurePortrait // maybe NightPortrait?
+            }
+            else {
+                camera.exposure.exposureMode = CameraExposure.ExposureManual
+            }
+        }
+
+        onClearDraw: canvas.clear()
+
+        onResetZoom: {
+            zoomScale.xScale = 1
+            zoomScale.yScale = 1
+            zoomTranslate.x = 0
+            zoomTranslate.y = 0
         }
     }
 

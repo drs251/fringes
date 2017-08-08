@@ -1,8 +1,6 @@
-- Make it work with image source camera
-- Ability to choose between image source and webcam(s) -> menu
 - Image saving
-- Canvas to draw with the mouse
 - Automatic exposure/gain to keep highest value at 95% * 2^8
+- Manual exposure for image source camera (-> switch from video to single images?)
 - Ability to show a window with FFT (via Python)
 - Ability to send data to arbitrary Python scripts
-- Zooming
+- Multi-Zooming and syncing with draw canvas

@@ -12,7 +12,11 @@ Item {
     property alias enableZoom: zoom_button.checked
     property alias exposure_time: exposure_slider.value
     property alias gain: gain_slider.value
-    property alias auto: auto_checkbox.checked
+    property alias auto_exposure: auto_checkbox.checked
+
+    signal resetZoom()
+    signal clearDraw()
+
 
     Rectangle {
         anchors.fill: parent
@@ -105,7 +109,7 @@ Item {
                         height: 50
                         id: clear_button
                         text: "Erase"
-                        onClicked: canvas.clear()
+                        onClicked: bottomMenu.clearDraw()
                     }
 
                 }
@@ -132,6 +136,7 @@ Item {
                         text: "Reset"
                         onClicked: {
                             zoom_button.checked = false
+                            bottomMenu.resetZoom()
                         }
                     }
                 }
