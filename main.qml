@@ -174,8 +174,11 @@ ApplicationWindow {
         selectMultiple: false
         sidebarVisible: true
         onAccepted: {
-            var urlNoProtocol = (fileUrl+"").replace('file://', '');
-            top_menu.savedImage.saveToFile(urlNoProtocol)
+            console.log(fileUrl)
+            var urlNoProtocol = (fileUrl+"").replace('file:///', '');
+            console.log(urlNoProtocol)
+            var success = top_menu.savedImage.saveToFile(urlNoProtocol)
+            if (!success) console.log("An error occured during saving!")
         }
     }
 
