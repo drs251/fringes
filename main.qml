@@ -1,6 +1,7 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.0
 import QtQuick.Layouts 1.3
+import QtQuick.Dialogs 1.2
 import QtMultimedia 5.8
 import Qt.labs.settings 1.0
 
@@ -164,6 +165,22 @@ ApplicationWindow {
     }
 
 
+    FileDialog {
+        id: saveImageDialog
+        title: "Please choose a file name"
+        nameFilters: [ "Image files (*.png)", "All files (*)" ]
+        folder: shortcuts.home
+        selectExisting: false
+        selectMultiple: false
+        sidebarVisible: true
+        onAccepted: {
+            var urlNoProtocol = (fileUrl+"").replace('file://', '');
+            console.log(urlNoProtocol)
+            top_menu.savedImage.saveToFile(urlNoProtocol)
+        }
+    }
+
+
     TopMenu {
         id: top_menu
         height: 70
@@ -171,12 +188,14 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.right: parent.right
 
+        property var savedImage
+
         onSaveImage: {
             // https://stackoverflow.com/questions/39939565/error-saving-qml-item-as-image-to-file-using-grabtoimage
             // https://doc.qt.io/qt-5/qml-qtquick-dialogs-filedialog.html
             output.grabToImage(function(result) {
-                if(result.saveToFile("./something.png")) console.log("file saved")
-                else console.log("saving unsuccesful!")
+                top_menu.savedImage = result
+                saveImageDialog.open()
             });
         }
     }
