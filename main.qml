@@ -175,7 +175,6 @@ ApplicationWindow {
         sidebarVisible: true
         onAccepted: {
             var urlNoProtocol = (fileUrl+"").replace('file://', '');
-            console.log(urlNoProtocol)
             top_menu.savedImage.saveToFile(urlNoProtocol)
         }
     }
