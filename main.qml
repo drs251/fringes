@@ -174,9 +174,12 @@ ApplicationWindow {
         selectMultiple: false
         sidebarVisible: true
         onAccepted: {
-            console.log(fileUrl)
-            var urlNoProtocol = (fileUrl+"").replace('file:///', '');
-            console.log(urlNoProtocol)
+            var urlNoProtocol
+            if(Qt.platform.os == "windows") {
+                urlNoProtocol = (fileUrl+"").replace('file:///', '');
+            } else {
+                urlNoProtocol = (fileUrl+"").replace('file://', '');
+            }
             var success = top_menu.savedImage.saveToFile(urlNoProtocol)
             if (!success) console.log("An error occured during saving!")
         }

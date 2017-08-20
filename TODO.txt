@@ -4,3 +4,4 @@
 - Ability to show a window with FFT (via Python)
 - Ability to send data to arbitrary Python scripts
 - Multi-Zooming and syncing with draw canvas
+- Persistant settings
