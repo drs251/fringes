@@ -8,15 +8,15 @@ Item {
     id: topMenu
     opacity: 0
 
+    Behavior on opacity { PropertyAnimation {
+            duration: 800
+            easing.type: Easing.OutCubic
+        } }
+
     signal saveImage()
 
     Rectangle {
         anchors.fill: parent
-
-        Behavior on opacity { PropertyAnimation {
-                duration: 800
-                easing.type: Easing.OutCubic
-            } }
 
         opacity: 0.7
 

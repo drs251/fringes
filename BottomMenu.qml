@@ -5,7 +5,12 @@ import QtQuick.Controls 1.4
 
 Item {
     id: bottomMenu
+
     opacity: 0
+    Behavior on opacity { PropertyAnimation {
+            duration: 800
+            easing.type: Easing.OutCubic
+        } }
 
     property alias enableDraw: draw_button.checked
     property alias enableZoom: zoom_button.checked
@@ -20,10 +25,6 @@ Item {
     Rectangle {
         anchors.fill: parent
 
-        Behavior on opacity { PropertyAnimation {
-                duration: 800
-                easing.type: Easing.OutCubic
-            } }
         Timer {
             id: bottom_timer
             interval: 4000
