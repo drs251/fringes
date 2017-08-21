@@ -1,11 +1,12 @@
-import QtQuick 2.9
-import QtQuick.Controls 2.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
+import QtQuick.Controls.Styles 1.4
 
 Item {
     property alias value: slider.value
-    property alias from: slider.from
-    property alias to: slider.to
+    property alias from: slider.minimumValue
+    property alias to: slider.maximumValue
     property alias text: label.text
 
     RowLayout {
@@ -13,22 +14,29 @@ Item {
 
         Slider {
             id: slider
-            width: 400
+            width: 800
+            style: SliderStyle {
+                groove: Rectangle {
+                    implicitWidth: 300
+                    implicitHeight: 6
+                    color: "gray"
+                    radius: 6
+                }
+            }
             onValueChanged: {
                 spinbox.value = value
             }
-            onFromChanged: {
-                spinbox.from = from
+            onMinimumValueChanged: {
+                spinbox.minimumValue = minimumValue
             }
-            onToChanged: {
-                spinbox.to = to
+            onMaximumValueChanged: {
+                spinbox.maximumValue = maximumValue
             }
         }
 
         SpinBox {
             id: spinbox
             Layout.alignment: Layout.Left
-            editable: true
             onValueChanged: {
                 slider.value = value
             }

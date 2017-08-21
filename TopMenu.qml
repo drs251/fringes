@@ -1,8 +1,8 @@
-import QtQuick 2.7
-import QtQuick.Controls 2.0
-import QtQuick.Layouts 1.3
-import QtMultimedia 5.5
-import Qt.labs.settings 1.0
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtMultimedia 5.6
+//import QtQuick.Layouts 1.3
+//import Qt.labs.settings 1.0
 
 Item {
     id: topMenu
@@ -40,8 +40,9 @@ Item {
 
             Row {
                 anchors.fill: parent
+                anchors.margins: 20
                 spacing: 50
-                padding: 20
+                //padding: 20
 
                 ComboBox {
                     id: camera_combo_box

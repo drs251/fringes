@@ -1,8 +1,7 @@
-import QtQuick 2.7
-import QtQuick.Controls 2.0
-import QtQuick.Layouts 1.3
-import QtMultimedia 5.5
-import Qt.labs.settings 1.0
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+//import QtQuick.Layouts 1.3
+//import Qt.labs.settings 1.0
 
 Item {
     id: bottomMenu
@@ -47,13 +46,14 @@ Item {
             }
 
             Row {
-                spacing: 80
-                padding: 10
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 20
                 Column {
                     //anchors.fill: parent
 
                     spacing: 6
-                    padding: 6
+                    anchors.margins: 6
 
                     BoxSlider {
                         id: exposure_slider
