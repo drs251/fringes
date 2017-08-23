@@ -1,3 +1,8 @@
+name = "Dummy 2"
+
+description= "A dummy plugin"
+
+
 def init():
     print("dummy2: init")
 

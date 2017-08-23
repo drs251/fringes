@@ -14,6 +14,7 @@ Item {
         } }
 
     signal saveImage()
+    signal managePlugins()
 
     Rectangle {
         anchors.fill: parent
@@ -67,6 +68,12 @@ Item {
                     id: save_button
                     text: "Save..."
                     onClicked: top_menu.saveImage()
+                }
+
+                Button {
+                    id: plugin_button
+                    text: "Manage plugins..."
+                    onClicked: top_menu.managePlugins()
                 }
             }
         }

@@ -186,6 +186,53 @@ ApplicationWindow {
     }
 
 
+    Dialog {
+        id: pluginDialog
+        title: "Manage plugins"
+        standardButtons: StandardButton.Ok
+        height: 550
+
+        ListView {
+            height: 400
+            anchors.left: parent.left
+            anchors.right: parent.right
+
+            ListModel {
+                id: listmodel
+                ListElement {}
+            }
+            model: 5
+
+            delegate: Rectangle {
+                height: 80
+
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    CheckBox {
+
+                    }
+
+                    Column {
+
+                        Label {
+                            text: "plugin"
+                        }
+
+                        Label {
+                            text: "description"
+                        }
+
+                    }
+
+                }
+            }
+
+
+        }
+    }
+
+
     TopMenu {
         id: top_menu
         height: 70
@@ -202,6 +249,10 @@ ApplicationWindow {
                 top_menu.savedImage = result
                 saveImageDialog.open()
             });
+        }
+
+        onManagePlugins: {
+            pluginDialog.open()
         }
     }
 
