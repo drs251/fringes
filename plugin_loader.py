@@ -2,17 +2,18 @@ import os
 import importlib
 import collections
 
-from PyQt5.QtCore import QObject, pyqtProperty, pyqtSlot, QAbstractListModel
+from PyQt5.QtCore import QObject, pyqtProperty, pyqtSlot, QAbstractListModel, QVariant
 from PyQt5.QtMultimedia import QVideoFrame
 from PyQt5.QtQml import qmlRegisterType
 
 
 class PluginLoader(QObject):
 
-    def __init__(self):
-        self.plugin_folder = "plugins"
+    def __init__(self, parent=None):
 
-        self.plugins = collections.OrderedDict()
+        super().__init__(parent)
+        self.plugin_folder = "plugins"
+        self._plugins = collections.OrderedDict()
 
         # find candidates for plugins
         for file in os.listdir("./" + self.plugin_folder):
@@ -24,14 +25,18 @@ class PluginLoader(QObject):
                     continue
                 try:
                     # if it was possible to import it, the plugin goes in the dictionary
-                    self.plugins[name] = plugin.process_frame
+                    self._plugins[name] = plugin.process_frame
                 except AttributeError:
                     pass
 
-    @pyqtProperty(QAbstractListModel)
+# cf. http://pyqt.sourceforge.net/Docs/PyQt5/qml.html
+
+    @pyqtProperty(type=QVariant)
     def plugins(self):
         # TODO: this probably needs to be reformatted
-        return self.plugins
+        result = sorted(self._plugins.keys())
+        return QVariant(result)
+
 
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')

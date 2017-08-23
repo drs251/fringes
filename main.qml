@@ -4,6 +4,7 @@ import QtQuick.Controls 1.4
 import QtQuick.Dialogs 1.2
 import QtMultimedia 5.6
 //import Qt.labs.settings 1.0
+import Plugins 1.0
 
 
 ApplicationWindow {
@@ -192,16 +193,25 @@ ApplicationWindow {
         standardButtons: StandardButton.Ok
         height: 550
 
+        PluginLoader {
+            id: pluginloader
+        }
+
         ListView {
             height: 400
             anchors.left: parent.left
             anchors.right: parent.right
 
-            ListModel {
-                id: listmodel
-                ListElement {}
+//            ListModel {
+//                id: listmodel
+//                ListElement {}
+//            }
+
+            model: pluginloader
+
+            onActiveFocusChanged: {
+                console.log(this.model)
             }
-            model: 5
 
             delegate: Rectangle {
                 height: 80
@@ -216,11 +226,11 @@ ApplicationWindow {
                     Column {
 
                         Label {
-                            text: "plugin"
+                            text: pluginloader.plugins[index]
                         }
 
                         Label {
-                            text: "description"
+                            text: pluginloader.plugins[index]
                         }
 
                     }
