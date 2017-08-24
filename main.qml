@@ -207,7 +207,7 @@ ApplicationWindow {
 //                ListElement {}
 //            }
 
-            model: pluginloader
+            model: pluginloader.plugins
 
             onActiveFocusChanged: {
                 console.log(this.model)
@@ -216,21 +216,32 @@ ApplicationWindow {
             delegate: Rectangle {
                 height: 80
 
+                PluginRunner {
+                    id: pluginrunner
+                    plugin: pluginloader.plugins[index]
+                }
+
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
 
                     CheckBox {
-
+                        id: pluginCheckbox
+                        checked: false
+                        onClicked: {
+                            pluginrunner.active = checked
+                        }
                     }
 
                     Column {
 
                         Label {
-                            text: pluginloader.plugins[index]
+                            id: nameLabel
+                            text: name
                         }
 
                         Label {
-                            text: pluginloader.plugins[index]
+                            id: descriptionLabel
+                            text: description
                         }
 
                     }
