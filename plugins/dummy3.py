@@ -1,6 +1,6 @@
 name = "Dummy 3"
 
-description= "A dummy plugin"
+description= "A third dummy plugin"
 
 
 def init():

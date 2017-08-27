@@ -12,6 +12,7 @@ def init(parent=None):
     global canvas
     canvas = plugin_canvas.PluginCanvas(parent)
     canvas.set_name(name)
+    process_frame(None)
     canvas.show_canvas()
 
 
@@ -24,7 +25,7 @@ def process_frame(frame):
     ax = canvas.figure.add_subplot(111)
 
     # discards the old graph
-    ax.hold(False)
+    # ax.hold(False)
 
     # plot data
     ax.plot(data, '*-')
