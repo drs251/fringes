@@ -219,6 +219,7 @@ ApplicationWindow {
                 PluginRunner {
                     id: pluginrunner
                     plugin: pluginloader.plugins[index]
+                    active: pluginCheckbox.checked
                 }
 
                 Row {
@@ -227,9 +228,6 @@ ApplicationWindow {
                     CheckBox {
                         id: pluginCheckbox
                         checked: false
-                        onClicked: {
-                            pluginrunner.active = checked
-                        }
                     }
 
                     Column {

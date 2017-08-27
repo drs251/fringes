@@ -9,7 +9,7 @@ from PyQt5.QtGui import QImage
 import numpy as np
 
 
-class Plugin(QObject):
+class PluginWrapper(QObject):
 
     nameChanged = pyqtSignal('QString', arguments=['name'])
     descriptionChanged = pyqtSignal('QString', arguments=['description'])
@@ -20,6 +20,7 @@ class Plugin(QObject):
 
         self._name = None
         self._description = None
+        #self._parent = parent
         self.process_frame = None
         self.init = None
 
@@ -41,7 +42,7 @@ class Plugin(QObject):
         self._description = description
         self.descriptionChanged.emit(self._description)
 
-qmlRegisterType(Plugin, 'Plugins', 1, 0, 'Plugin')
+qmlRegisterType(PluginWrapper, 'Plugins', 1, 0, 'Plugin')
 
 
 class PluginLoader(QObject):
@@ -64,7 +65,7 @@ class PluginLoader(QObject):
                     print("Error importing plugin {} !".format(file))
                     continue
                 try:
-                    plugin = Plugin()
+                    plugin = PluginWrapper()
                     plugin.name = plugin_import.name
                     plugin.description = plugin_import.description
                     plugin.process_frame = plugin_import.process_frame
@@ -76,14 +77,14 @@ class PluginLoader(QObject):
 
     @pyqtProperty(type=QQmlListProperty, notify=pluginsChanged)
     def plugins(self):
-        return QQmlListProperty(Plugin, self, self._plugins)
+        return QQmlListProperty(PluginWrapper, self, self._plugins)
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')
 
 
 class PluginRunner(QObject):
 
-    pluginChanged = pyqtSignal(Plugin, arguments=['plugin'])
+    pluginChanged = pyqtSignal(PluginWrapper, arguments=['plugin'])
     activeChanged = pyqtSignal(bool, arguments=['active'])
 
     def __init__(self, parent=None):
@@ -92,16 +93,22 @@ class PluginRunner(QObject):
 
         self._plugin = None
         self._active = False
+        self._parent = parent
+        self._initialized = False
 
-    @pyqtProperty(Plugin, notify=pluginChanged)
+    @pyqtProperty(PluginWrapper, notify=pluginChanged)
     def plugin(self):
         return self._plugin
 
     @plugin.setter
     def plugin(self, plugin):
-        self._plugin = plugin
-        self.pluginChanged.emit(self._plugin)
-        plugin.init()
+        try:
+            self._plugin = plugin
+            self.pluginChanged.emit(self._plugin)
+            plugin.init(self._parent)
+            self._initialized = True
+        except Exception as error:
+            print("Could not initialize plugin {} .\n{}".format(self._plugin.name, error))
 
     @pyqtProperty(bool, notify=activeChanged)
     def active(self):

@@ -14,7 +14,7 @@ import random
 
 class Window(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        super(Window, self).__init__(parent)
+        super().__init__(parent)
 
         # a figure instance to plot on
         self.figure = plt.figure()
@@ -56,8 +56,12 @@ class Window(QtWidgets.QDialog):
         self.canvas.draw()
 
 
-def init():
-    print("dummy1: init")
+def init(parent=None):
+    window = Window(parent)
+    window.show()
+    window.raise_()
+    window.activateWindow()
+    pass
 
 
 def process_frame(frame):
