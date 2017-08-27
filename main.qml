@@ -195,39 +195,34 @@ ApplicationWindow {
 
         PluginLoader {
             id: pluginloader
+
+
         }
+
+        VideoConverter {
+            id: videoconverter
+                Component.onCompleted: {
+                    videoconverter.setCamera(camera)
+                }
+        }
+
 
         ListView {
             height: 400
             anchors.left: parent.left
             anchors.right: parent.right
 
-//            ListModel {
-//                id: listmodel
-//                ListElement {}
-//            }
-
             model: pluginloader.plugins
-
-            onActiveFocusChanged: {
-                console.log(this.model)
-            }
 
             delegate: Rectangle {
                 height: 80
-
-                PluginRunner {
-                    id: pluginrunner
-                    plugin: pluginloader.plugins[index]
-                    active: pluginCheckbox.checked
-                }
 
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
 
                     CheckBox {
                         id: pluginCheckbox
-                        checked: false
+                        checked: pluginloader.plugins[index]
                     }
 
                     Column {

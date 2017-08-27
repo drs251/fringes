@@ -2,15 +2,43 @@ import os
 import importlib
 import collections
 
-from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
-from PyQt5.QtMultimedia import QVideoFrame
+from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType
+from PyQt5.QtMultimedia import QVideoFrame, QVideoProbe, QCamera
 from PyQt5.QtQml import qmlRegisterType, QQmlListProperty
 from PyQt5.QtGui import QImage
 import numpy as np
 
 
-class PluginWrapper(QObject):
 
+class VideoConverter(QVideoProbe):
+    frameConverted = pyqtSignal(QImage, arguments=['frame'])
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    @pyqtSlot(QVideoFrame, result=QImage)
+    def process_frame(self, frame):
+        image_format = QVideoFrame.imageFormatFromPixelFormat(frame.pixelFormat())
+        image = QImage(frame.bits(),
+                       frame.width(),
+                       frame.height(),
+                       frame.bytesPerLine(),
+                       image_format)
+        image = image.convertToFormat(QImage.Format_RGB32)
+        self.frameConverted.emit(image)
+
+    @pyqtSlot(QCamera)
+    def setCamera(self, camera):
+        print(type(camera))
+        self.setSource(camera)
+
+id = QMetaType.type('QCamera')
+qmlRegisterType(VideoConverter, 'Plugins', 1, 0, 'VideoConverter')
+
+
+class Plugin(QObject):
+
+    activeChanged = pyqtSignal(bool, arguments=['active'])
     nameChanged = pyqtSignal('QString', arguments=['name'])
     descriptionChanged = pyqtSignal('QString', arguments=['description'])
 
@@ -20,9 +48,11 @@ class PluginWrapper(QObject):
 
         self._name = None
         self._description = None
-        #self._parent = parent
+        self._parent = parent
         self.process_frame = None
         self.init = None
+        self._active = False
+        self._parent = parent
 
     @pyqtProperty('QString', notify=nameChanged)
     def name(self):
@@ -42,7 +72,30 @@ class PluginWrapper(QObject):
         self._description = description
         self.descriptionChanged.emit(self._description)
 
-qmlRegisterType(PluginWrapper, 'Plugins', 1, 0, 'Plugin')
+    @pyqtProperty(bool, notify=activeChanged)
+    def active(self):
+        return self._active
+
+    @active.setter
+    def active(self, active):
+        # a quick fix to a strange bug:
+        active = not active
+        print("{} active: {}".format(self._plugin.name, self._active))
+        self._active = active
+        self.activeChanged.emit(self._active)
+
+    @pyqtSlot(QImage)
+    def process_frame(self, image):
+        if self.is_active:
+
+            pointer = image.bits()
+            pointer.setsize(image.byteCount())
+            array = np.array(pointer).reshape(image.height(), image.width(), 4)
+
+            self.plugin.process_frame(array)
+
+
+qmlRegisterType(Plugin, 'Plugins', 1, 0, 'Plugin')
 
 
 class PluginLoader(QObject):
@@ -65,75 +118,25 @@ class PluginLoader(QObject):
                     print("Error importing plugin {} !".format(file))
                     continue
                 try:
-                    plugin = PluginWrapper()
+                    plugin = Plugin()
                     plugin.name = plugin_import.name
                     plugin.description = plugin_import.description
                     plugin.process_frame = plugin_import.process_frame
                     plugin.init = plugin_import.init
+                    plugin.init()
                     # if it was possible to import it, the plugin goes in the list:
                     self._plugins.append(plugin)
-                except AttributeError:
-                    print("Error importing plugin {} !".format(file))
+                except Exception as err:
+                    print("Error importing plugin {} !\n{}".format(file, err))
 
     @pyqtProperty(type=QQmlListProperty, notify=pluginsChanged)
     def plugins(self):
-        return QQmlListProperty(PluginWrapper, self, self._plugins)
+        return QQmlListProperty(Plugin, self, self._plugins)
+
+    @pyqtSlot(VideoConverter)
+    def setVideoConverter(self, converter):
+        for plugin in self._plugins:
+            converter.frameConverted.connect(plugin.process_frame)
+
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')
-
-
-class PluginRunner(QObject):
-
-    pluginChanged = pyqtSignal(PluginWrapper, arguments=['plugin'])
-    activeChanged = pyqtSignal(bool, arguments=['active'])
-
-    def __init__(self, parent=None):
-
-        super().__init__(parent)
-
-        self._plugin = None
-        self._active = False
-        self._parent = parent
-        self._initialized = False
-
-    @pyqtProperty(PluginWrapper, notify=pluginChanged)
-    def plugin(self):
-        return self._plugin
-
-    @plugin.setter
-    def plugin(self, plugin):
-        try:
-            self._plugin = plugin
-            self.pluginChanged.emit(self._plugin)
-            plugin.init(self._parent)
-            self._initialized = True
-        except Exception as error:
-            print("Could not initialize plugin {} .\n{}".format(self._plugin.name, error))
-
-    @pyqtProperty(bool, notify=activeChanged)
-    def active(self):
-        return self._active
-
-    @active.setter
-    def active(self, active):
-        # a quick fix to a strange bug:
-        active = not active
-        print("{} active: {}".format(self._plugin.name, self._active))
-        self._active = active
-        self.activeChanged.emit(self._active)
-
-    @pyqtSlot(QImage)
-    def process_frame(self, image):
-        if self.is_active:
-            # TODO: do conversion, or it might be better to do the conversion only in one place first
-            # and then to send it to all plugins?
-
-            image = image.convertToFormat(QImage.Format_RGB32)
-
-            pointer = image.bits()
-            pointer.setsize(image.byteCount())
-            array = np.array(pointer).reshape(image.height(), image.width(), 4)
-
-            self.plugin.process_frame(array)
-
-qmlRegisterType(PluginRunner, 'Plugins', 1, 0, 'PluginRunner')
