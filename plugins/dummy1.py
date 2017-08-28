@@ -18,7 +18,7 @@ def init(parent=None):
 
 
 def process_frame(frame):
-    ''' plot some random stuff '''
+    print("dummy1 process frame")
     # random data
     data = [random.random() for i in range(10)]
 

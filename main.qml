@@ -17,6 +17,7 @@ ApplicationWindow {
 
     Camera {
         id: camera
+        objectName: "camera"
 
 //        imageProcessing {
 //            whiteBalanceMode: CameraImageProcessing.WhiteBalanceManual
@@ -47,7 +48,6 @@ ApplicationWindow {
         anchors.fill: parent
         fillMode: VideoOutput.PreserveAspectCrop
         focus : visible // to receive focus and capture key events when visible
-        filters: [ converter ]
 
         transform: [
             Scale {
@@ -57,12 +57,6 @@ ApplicationWindow {
                 id: zoomTranslate
             }
         ]
-    }
-
-
-    // This provides the image data to the plugins:
-    VideoConverter {
-        id: videoconverter
     }
 
 
@@ -206,6 +200,7 @@ ApplicationWindow {
 
         PluginLoader {
             id: pluginloader
+            objectName: "pluginloader"
 
 
         }
