@@ -3,36 +3,47 @@ import importlib
 import collections
 
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType
-from PyQt5.QtMultimedia import QVideoFrame, QVideoProbe, QCamera
+from PyQt5.QtMultimedia import QVideoFrame, QVideoFilterRunnable, QAbstractVideoFilter
 from PyQt5.QtQml import qmlRegisterType, QQmlListProperty
 from PyQt5.QtGui import QImage
 import numpy as np
 
 
 
-class VideoConverter(QVideoProbe):
-    frameConverted = pyqtSignal(QImage, arguments=['frame'])
+class VideoConverterRunnable(QVideoFilterRunnable):
+    #frameConverted = pyqtSignal(QImage, arguments=['frame'])
+
+    def __init__(self, converter=None):
+        print("runnable __init__")
+        super().__init__()
+        self._converter = converter
+
+    def run(self, input, surfaceFormat, flags):
+        print("run")
+        # image_format = QVideoFrame.imageFormatFromPixelFormat(frame.pixelFormat())
+        # image = QImage(frame.bits(),
+        #                frame.width(),
+        #                frame.height(),
+        #                frame.bytesPerLine(),
+        #                image_format)
+        # image = image.convertToFormat(QImage.Format_RGB32)
+        # self.frameConverted.emit(image)
+
+        #return input
+        return QVideoFrame()
+
+
+class VideoConverter(QAbstractVideoFilter):
+    #finished = pyqtSignal(QObject, arguments=['result'])
 
     def __init__(self, parent=None):
+        print("converter __init__")
         super().__init__(parent)
 
-    @pyqtSlot(QVideoFrame, result=QImage)
-    def process_frame(self, frame):
-        image_format = QVideoFrame.imageFormatFromPixelFormat(frame.pixelFormat())
-        image = QImage(frame.bits(),
-                       frame.width(),
-                       frame.height(),
-                       frame.bytesPerLine(),
-                       image_format)
-        image = image.convertToFormat(QImage.Format_RGB32)
-        self.frameConverted.emit(image)
+    def createFilterRunnable(self):
+        runnable = VideoConverterRunnable(self)
+        return runnable
 
-    @pyqtSlot(QCamera)
-    def setCamera(self, camera):
-        print(type(camera))
-        self.setSource(camera)
-
-id = QMetaType.type('QCamera')
 qmlRegisterType(VideoConverter, 'Plugins', 1, 0, 'VideoConverter')
 
 
@@ -101,12 +112,14 @@ qmlRegisterType(Plugin, 'Plugins', 1, 0, 'Plugin')
 class PluginLoader(QObject):
 
     pluginsChanged = pyqtSignal(QQmlListProperty, arguments=['plugins'])
+    converterChanged = pyqtSignal(VideoConverter, arguments=['converter'])
 
     def __init__(self, parent=None):
 
         super().__init__(parent)
         self._plugin_folder = "plugins"
         self._plugins = []
+        self._converter = None
 
         # find candidates for plugins
         for file in os.listdir("./" + self._plugin_folder):
@@ -133,10 +146,15 @@ class PluginLoader(QObject):
     def plugins(self):
         return QQmlListProperty(Plugin, self, self._plugins)
 
-    @pyqtSlot(VideoConverter)
-    def setVideoConverter(self, converter):
+    @pyqtProperty(type=VideoConverter, notify=converterChanged)
+    def converter(self):
+        return self._converter
+
+    @converter.setter
+    def converter(self, converter):
+        self._converter = converter
         for plugin in self._plugins:
-            converter.frameConverted.connect(plugin.process_frame)
+            self._converter.connect()
 
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')

@@ -12,8 +12,9 @@ def init(parent=None):
     global canvas
     canvas = plugin_canvas.PluginCanvas(parent)
     canvas.set_name(name)
-    process_frame(None)
-    canvas.show_canvas()
+    return
+    # process_frame(None)
+    # canvas.show_canvas()
 
 
 def process_frame(frame):

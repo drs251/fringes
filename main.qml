@@ -47,6 +47,7 @@ ApplicationWindow {
         anchors.fill: parent
         fillMode: VideoOutput.PreserveAspectCrop
         focus : visible // to receive focus and capture key events when visible
+        filters: [ converter ]
 
         transform: [
             Scale {
@@ -59,6 +60,13 @@ ApplicationWindow {
     }
 
 
+    // This provides the image data to the plugins:
+    VideoConverter {
+        id: videoconverter
+    }
+
+
+    // This controls the zooming operation, including drawing the box and setting the magnification
     Canvas {
         id: zoom_canvas
         anchors.fill: parent
@@ -123,6 +131,7 @@ ApplicationWindow {
     }
 
 
+    // This is for painting with the mouse
     Canvas {
         id: canvas
         anchors.fill: parent
@@ -166,6 +175,7 @@ ApplicationWindow {
     }
 
 
+    // The dialog for saving images
     FileDialog {
         id: saveImageDialog
         title: "Please choose a file name"
@@ -187,6 +197,7 @@ ApplicationWindow {
     }
 
 
+    // The plugin dialog
     Dialog {
         id: pluginDialog
         title: "Manage plugins"
@@ -199,14 +210,7 @@ ApplicationWindow {
 
         }
 
-        VideoConverter {
-            id: videoconverter
-                Component.onCompleted: {
-                    videoconverter.setCamera(camera)
-                }
-        }
-
-
+        // The list containing the plugins
         ListView {
             height: 400
             anchors.left: parent.left
@@ -214,6 +218,7 @@ ApplicationWindow {
 
             model: pluginloader.plugins
 
+            // How each item should look like
             delegate: Rectangle {
                 height: 80
 
