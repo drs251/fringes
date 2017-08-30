@@ -55,7 +55,9 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._surface = None
         self._conversionInProgress = False
         self._counter = 0
-        self.frameskip = 20
+        self._pixelFormat = None
+        self._frameSize = None
+        self.frameskip = 2
         self.setSource(source)
 
     @pyqtProperty(QAbstractVideoSurface, notify=videoSurfaceChanged)
@@ -69,8 +71,8 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._surface = surface
         self.videoSurfaceChanged.emit(self._surface)
         if self._surface is not None:
-            # TODO: which QVideoSurfaceFormat? (check qt5.9, there it's automatic...)
-            self._surface.start()
+            # TODO: which QVideoSurfaceFormat?
+            self._surface.start(QVideoSurfaceFormat(self._frameSize, self._pixelFormat))
             self._formats = self._surface.supportedPixelFormats()
             self._nativeResolution = self._surface.nativeResolution()
 
@@ -122,6 +124,8 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._source = source
         source.setViewfinder(self)
         self._source.start()
+        self._frameSize = self._source.supportedViewfinderResolutions()[-1]
+        self._pixelFormat = self._source.supportedViewfinderPixelFormats()[-1]
         return True
 
     def isActive(self) -> bool:
