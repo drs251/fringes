@@ -14,12 +14,14 @@ Item {
 
     property alias enableDraw: draw_button.checked
     property alias enableZoom: zoom_button.checked
+    property alias enableClipping: clip_button.checked
     property alias exposure_time: exposure_slider.value
     property alias gain: gain_slider.value
     property alias auto_exposure: auto_checkbox.checked
 
     signal resetZoom()
     signal clearDraw()
+    signal resetClipping()
 
 
     Rectangle {
@@ -138,6 +140,29 @@ Item {
                         onClicked: {
                             zoom_button.checked = false
                             bottomMenu.resetZoom()
+                        }
+                    }
+
+                    Column {
+                        spacing: 20
+
+                        Button {
+                            width: 100
+                            height: 50
+                            id: clip_button
+                            text: "Clip data"
+                            checkable: true
+                        }
+
+                        Button {
+                            width: 100
+                            height: 50
+                            id: reset_clip_button
+                            text: "Reset"
+                            onClicked: {
+                                clip_button.checked = false
+                                bottomMenu.clipping()
+                            }
                         }
                     }
                 }

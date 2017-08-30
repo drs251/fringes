@@ -15,17 +15,17 @@ ApplicationWindow {
     title: "Fringes"
 
 
-    Camera {
-        id: camera
-        objectName: "camera"
-
+//    Camera {
+//        id: camera
+//        objectName: "camera"
+//
 //        imageProcessing {
 //            whiteBalanceMode: CameraImageProcessing.WhiteBalanceManual
 //            denoisingLevel: -1
 //            sharpeningLevel: -1
 //        }
-
-        exposure {
+//
+//        exposure {
 //            manualIso: 400
 //            exposureCompensation: -1.0
 //            exposureMode: Camera.ExposureManual
@@ -37,17 +37,17 @@ ApplicationWindow {
 //                console.log("exposureMode " + camera.exposure.exposureMode)
 //                console.log("iso " + camera.exposure.iso)
 //            }
-        }
-
-    }
+//        }
+//
+//    }
 
 
     VideoOutput {
         id: output
-        source: camera
+        source: frameGrabber
         anchors.fill: parent
-        fillMode: VideoOutput.PreserveAspectCrop
-        focus : visible // to receive focus and capture key events when visible
+        fillMode: VideoOutput.Stretch
+        focus: visible // to receive focus and capture key events when visible
 
         transform: [
             Scale {
@@ -284,10 +284,10 @@ ApplicationWindow {
 
         onAuto_exposureChanged: {
             if(auto_exposure) {
-                camera.exposure.exposureMode = CameraExposure.ExposurePortrait // maybe NightPortrait?
+                //camera.exposure.exposureMode = CameraExposure.ExposurePortrait // maybe NightPortrait?
             }
             else {
-                camera.exposure.exposureMode = CameraExposure.ExposureManual
+                //camera.exposure.exposureMode = CameraExposure.ExposureManual
             }
         }
 

@@ -54,7 +54,7 @@ Item {
                     onCurrentIndexChanged: {
                         //console.log(model[currentIndex].displayName)
                         //console.log(model[currentIndex].deviceId)
-                        camera.deviceId = model[currentIndex].deviceId
+                        //camera.deviceId = model[currentIndex].deviceId
                     }
                 }
 
