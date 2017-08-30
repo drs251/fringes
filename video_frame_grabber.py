@@ -11,7 +11,6 @@ class VideoFrameGrabber(QAbstractVideoSurface):
     of video data, to send it to Python plugins. QVideoFrames are collected, converted for Python, and the
     original frames are provided to a VideoOutput via the videoSurface property."""
 
-    frameAvailable = pyqtSignal(QVideoFrame, name='frameAvailable')
     imageAvailable = pyqtSignal(QImage, name='imageAvailable')
     flush = pyqtSignal()
     videoSurfaceChanged = pyqtSignal(QAbstractVideoSurface)
@@ -53,7 +52,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
     def __init__(self, parent=None, source=None):
         super().__init__(parent)
         self._source = None
-        self._videoSurface = None
+        self._surface = None
         self._conversionInProgress = False
         self._counter = 0
         self.frameskip = 20
@@ -61,15 +60,19 @@ class VideoFrameGrabber(QAbstractVideoSurface):
 
     @pyqtProperty(QAbstractVideoSurface, notify=videoSurfaceChanged)
     def videoSurface(self):
-        return self._videoSurface
+        return self._surface
 
     @videoSurface.setter
     def videoSurface(self, surface: QAbstractVideoSurface):
-        self._videoSurface = surface
-        self.frameAvailable.connect(self._videoSurface.present)
-        self.videoSurfaceChanged.emit(self._videoSurface)
-        self._formats = self._videoSurface.supportedPixelFormats()
-        self._nativeResolution = self._videoSurface.nativeResolution()
+        if self._surface is not surface and self._surface is not None and self._surface.isActive():
+            self._surface.stop()
+        self._surface = surface
+        self.videoSurfaceChanged.emit(self._surface)
+        if self._surface is not None:
+            # TODO: which QVideoSurfaceFormat? (check qt5.9, there it's automatic...)
+            self._surface.start()
+            self._formats = self._surface.supportedPixelFormats()
+            self._nativeResolution = self._surface.nativeResolution()
 
     def supportedPixelFormats(self, handleType):
         return self.supportedFormats
@@ -79,7 +82,8 @@ class VideoFrameGrabber(QAbstractVideoSurface):
 
     def present(self, frame: QVideoFrame):
         if frame.isValid():
-            self.frameAvailable.emit(frame)
+            if self._surface is not None:
+                self._surface.present(frame)
             self._counter = (self._counter + 1) % self.frameskip
             if self._counter == 0:
                 self.imageFromFrame(frame)
