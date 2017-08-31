@@ -11,7 +11,7 @@ import numpy as np
 class Plugin(QObject):
 
     #activeChanged = pyqtSignal('bool', arguments=['active'])
-    activeChanged = pyqtSignal()
+    isActiveChanged = pyqtSignal('bool')
     nameChanged = pyqtSignal('QString', arguments=['name'])
     descriptionChanged = pyqtSignal('QString', arguments=['description'])
 
@@ -25,7 +25,7 @@ class Plugin(QObject):
         self.process_frame = None
         self.init = None
         self.show_window = None
-        self._active = True
+        self._active = False
         self._parent = parent
 
     @pyqtProperty('QString', notify=nameChanged)
@@ -46,7 +46,7 @@ class Plugin(QObject):
         self._description = description
         self.descriptionChanged.emit(self._description)
 
-    @pyqtProperty('bool', notify=activeChanged)
+    @pyqtProperty('bool')#, notify=isActiveChanged)
     def isActive(self):
         print("active is {}".format(self._active))
         return self._active
@@ -56,11 +56,12 @@ class Plugin(QObject):
         self.setActive(is_active)
 
     def setActive(self, is_active):
-        self._active = is_active
-        print("{} active changed to: {}".format(self._name, self._active))
-        if self._active:
-            self.show_window()
-        self.activeChanged.emit()
+        if is_active is not self._active:
+            self._active = is_active
+            print("{} setActive changed to: {}".format(self._name, self._active))
+            if self._active:
+                self.show_window()
+            self.isActiveChanged.emit(self._active)
 
     @pyqtSlot(QImage)
     def processImage(self, image):

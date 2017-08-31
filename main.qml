@@ -222,7 +222,11 @@ ApplicationWindow {
 
                     CheckBox {
                         id: pluginCheckbox
-                        checked: pluginloader.plugins[index]
+                        checked: isActive
+                        onClicked: {
+                            isActive = checked
+                            console.log(isActive)
+                        }
                     }
 
                     Column {

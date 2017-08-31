@@ -32,6 +32,7 @@ def process_frame(frame: np.ndarray):
     :param frame: a numpy array
     """
     global canvas
+    canvas.figure.clear()
     #print("dummy1 process frame")
     # random data
     data = [random.random() for _ in range(10)]
