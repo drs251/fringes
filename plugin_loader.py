@@ -1,11 +1,13 @@
 import os
 import importlib
 
-from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType
+from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, QAbstractListModel, Qt, QModelIndex, \
+    QVariant
 from PyQt5.QtMultimedia import QVideoFrame, QVideoFilterRunnable, QAbstractVideoFilter
 from PyQt5.QtQml import qmlRegisterType, QQmlListProperty
 from PyQt5.QtGui import QImage
 import numpy as np
+from enum import Enum
 
 
 class Plugin(QObject):
@@ -77,16 +79,68 @@ class Plugin(QObject):
 qmlRegisterType(Plugin, 'Plugins', 1, 0, 'Plugin')
 
 
+class PluginModel(QAbstractListModel):
+    """
+    This presents the plugins as a list for the user interface.
+    Refer to https://doc.qt.io/qt-5/qtquick-modelviewsdata-cppmodels.html
+    and https://doc.qt.io/qt-5/qabstractitemmodel.html
+    """
+
+    class PluginRoles(Enum):
+        NameRole = Qt.UserRole + 1
+        DescriptionRole = Qt.UserRole + 2
+        IsActiveRole = Qt.UserRole + 3
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._plugins = []
+
+    def roleNames(self):
+        roles = {}
+        roles[self.PluginRoles.NameRole.value] = b"name"
+        roles[self.PluginRoles.DescriptionRole.value] = b"description"
+        roles[self.PluginRoles.IsActiveRole.value] = b"isActive"
+        return roles
+
+    def addPlugin(self, plugin: Plugin):
+        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
+        self._plugins.append(plugin)
+        self.endInsertRows()
+
+    def getPlugins(self):
+        return self._plugins
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()):
+        return len(self._plugins)
+
+    def data(self, index: QModelIndex, role: int):
+        if index.row() < 0 or index.row() >= len(self._plugins):
+            return QVariant()
+
+        plugin = self._plugins[index.row()]
+        if role == self.PluginRoles.NameRole:
+            return plugin.name()
+        elif role == self.PluginRoles.DescriptionRole:
+            return plugin.description()
+        elif role == self.PluginRoles.IsActiveRole:
+            return plugin.isActive()
+
+        return QVariant()
+
+
+
+
+
 class PluginLoader(QObject):
 
-    pluginsChanged = pyqtSignal(QQmlListProperty, arguments=['plugins'])
+    pluginsChanged = pyqtSignal(QAbstractListModel, arguments=['plugins'])
     imageAvailable = pyqtSignal(QImage, arguments=['image'])
 
     def __init__(self, parent=None):
 
         super().__init__(parent)
         self._plugin_folder = "plugins"
-        self._plugins = []
+        self._plugins = PluginModel()
         self._probe = None
 
         # find candidates for plugins
@@ -111,16 +165,16 @@ class PluginLoader(QObject):
                     self.imageAvailable.connect(plugin.processImage)
 
                     # if it was possible to import it, the plugin goes in the list:
-                    self._plugins.append(plugin)
+                    self._plugins.addPlugin(plugin)
 
                 except Exception as err:
                     print("Error importing plugin {} !\n{}".format(file, err))
 
-        self.pluginsChanged.emit(QQmlListProperty(Plugin, self, self._plugins))
+        self.pluginsChanged.emit(self._plugins)
 
-    @pyqtProperty(type=QQmlListProperty, notify=pluginsChanged)
+    @pyqtProperty(type=QAbstractListModel, notify=pluginsChanged)
     def plugins(self):
-        return QQmlListProperty(Plugin, self, self._plugins)
+        return self._plugins
 
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')
