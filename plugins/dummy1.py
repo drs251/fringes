@@ -1,26 +1,40 @@
 import plugin_canvas
 import random
+import numpy as np
 
 name = "Dummy 1"
 
-description= "A dummy plugin"
+description = "A dummy plugin"
 
+# the area for plotting:
 canvas = None
 
+# a function reference to ask the main program to start or stop sending data (i.e. when closing the window)
+send_data = None
 
-def init(parent=None):
+
+def init(parent=None, send_data_function=None):
+    """
+    Initialize the plugin. Build the window and create any necessary variables
+    :param parent: The main window can be provided here
+    :param send_data_function: A function that can start or stop data being sent
+    """
     global canvas
-    canvas = plugin_canvas.PluginCanvas(parent)
+    global send_data
+    send_data = send_data_function
+    canvas = plugin_canvas.PluginCanvas(parent, send_data)
     canvas.set_name(name)
-    return
-    # process_frame(None)
-    # canvas.show_canvas()
 
 
-def process_frame(frame):
-    print("dummy1 process frame")
+def process_frame(frame: np.ndarray):
+    """
+    Process a numpy array: take the data and convert it into a plot
+    :param frame: a numpy array
+    """
+    global canvas
+    #print("dummy1 process frame")
     # random data
-    data = [random.random() for i in range(10)]
+    data = [random.random() for _ in range(10)]
 
     # create an axis
     ax = canvas.figure.add_subplot(111)
@@ -34,4 +48,11 @@ def process_frame(frame):
     # refresh canvas
     canvas.canvas.draw()
 
-    canvas.show_canvas()
+
+def show_window(show: bool = True):
+    """
+    Show or hide the plugin window
+    :param show: True or False
+    """
+    global canvas
+    canvas.show_canvas(show)

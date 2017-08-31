@@ -26,4 +26,7 @@ context.setContextProperty("camera", camera)
 engine.load(path.abspath(path.join(path.dirname(__file__), 'main.qml')))
 root = engine.rootObjects()[0]
 
+pluginloader = root.findChild(PluginLoader, "pluginloader")
+frameGrabber.imageAvailable.connect(pluginloader.imageAvailable)
+
 sys.exit(app.exec_())

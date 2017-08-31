@@ -46,7 +46,7 @@ ApplicationWindow {
         id: output
         source: frameGrabber
         anchors.fill: parent
-        fillMode: VideoOutput.Stretch
+        //fillMode: VideoOutput.PreserveAspectCrop
         focus: visible // to receive focus and capture key events when visible
 
         transform: [
