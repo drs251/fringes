@@ -10,8 +10,8 @@ import Plugins 1.0
 ApplicationWindow {
     id: root
     visible: true
-    width: 1280
-    height: 720
+    width: 960 //1280
+    height: 540 //720
     title: "Fringes"
 
 
@@ -224,8 +224,8 @@ ApplicationWindow {
                         id: pluginCheckbox
                         checked: isActive
                         onClicked: {
-                            isActive = checked
-                            console.log(isActive)
+                            pluginloader.activatePlugin(index, checked)
+                            //console.log(name + " " + isActive + " " + checked)
                         }
                     }
 

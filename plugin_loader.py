@@ -12,8 +12,7 @@ from enum import Enum
 
 class Plugin(QObject):
 
-    #activeChanged = pyqtSignal('bool', arguments=['active'])
-    isActiveChanged = pyqtSignal('bool')
+    isActiveChanged = pyqtSignal()
     nameChanged = pyqtSignal('QString', arguments=['name'])
     descriptionChanged = pyqtSignal('QString', arguments=['description'])
 
@@ -48,9 +47,9 @@ class Plugin(QObject):
         self._description = description
         self.descriptionChanged.emit(self._description)
 
-    @pyqtProperty('bool')#, notify=isActiveChanged)
+    @pyqtProperty('bool', notify=isActiveChanged)
     def isActive(self):
-        print("active is {}".format(self._active))
+        print("{} active() -> {}".format(self._name, self._active))
         return self._active
 
     @isActive.setter
@@ -58,12 +57,13 @@ class Plugin(QObject):
         self.setActive(is_active)
 
     def setActive(self, is_active):
-        if is_active is not self._active:
+        print("{} setActive({})".format(self._name, is_active))
+        if is_active is not self._active or True:
             self._active = is_active
-            print("{} setActive changed to: {}".format(self._name, self._active))
             if self._active:
                 self.show_window()
-            self.isActiveChanged.emit(self._active)
+            #self.isActiveChanged.emit()
+
 
     @pyqtSlot(QImage)
     def processImage(self, image):
@@ -114,16 +114,17 @@ class PluginModel(QAbstractListModel):
         return len(self._plugins)
 
     def data(self, index: QModelIndex, role: int):
+        print("data({}, {}) called".format(index.row(), role))
         if index.row() < 0 or index.row() >= len(self._plugins):
             return QVariant()
 
         plugin = self._plugins[index.row()]
-        if role == self.PluginRoles.NameRole:
-            return plugin.name()
-        elif role == self.PluginRoles.DescriptionRole:
-            return plugin.description()
-        elif role == self.PluginRoles.IsActiveRole:
-            return plugin.isActive()
+        if role == self.PluginRoles.NameRole.value:
+            return plugin.name
+        elif role == self.PluginRoles.DescriptionRole.value:
+            return plugin.description
+        elif role == self.PluginRoles.IsActiveRole.value:
+            return plugin.isActive
 
         return QVariant()
 
@@ -175,6 +176,11 @@ class PluginLoader(QObject):
     @pyqtProperty(type=QAbstractListModel, notify=pluginsChanged)
     def plugins(self):
         return self._plugins
+
+    @pyqtSlot(int, bool)
+    def activatePlugin(self, index, active):
+        self._plugins.getPlugins()[index].setActive(active)
+
 
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')
