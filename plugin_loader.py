@@ -5,73 +5,60 @@ from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType,
     QVariant
 from PyQt5.QtMultimedia import QVideoFrame, QVideoFilterRunnable, QAbstractVideoFilter
 from PyQt5.QtQml import qmlRegisterType, QQmlListProperty
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QPixelFormat
 import numpy as np
 from enum import Enum
 
 
 class Plugin(QObject):
 
-    isActiveChanged = pyqtSignal()
-    nameChanged = pyqtSignal('QString', arguments=['name'])
-    descriptionChanged = pyqtSignal('QString', arguments=['description'])
+    activeChanged = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, newName, newDescription):
 
-        super().__init__(parent)
+        super().__init__(None)
 
-        self._name = None
-        self._description = None
-        self._parent = parent
+        self._name = newName
+        self._description = newDescription
         self.process_frame = None
         self.init = None
         self.show_window = None
         self._active = False
-        self._parent = parent
 
-    @pyqtProperty('QString', notify=nameChanged)
-    def name(self):
+    def getName(self):
         return self._name
 
-    @name.setter
-    def name(self, name):
-        self._name = name
-        self.nameChanged.emit(self._name)
+    name = pyqtProperty('QString', fget=getName, constant=True)
 
-    @pyqtProperty('QString', notify=descriptionChanged)
-    def description(self):
+    def getDescription(self):
         return self._description
 
-    @description.setter
-    def description(self, description):
-        self._description = description
-        self.descriptionChanged.emit(self._description)
+    description = pyqtProperty('QString', fget=getDescription, constant=True)
 
-    @pyqtProperty('bool', notify=isActiveChanged)
-    def isActive(self):
-        print("{} active() -> {}".format(self._name, self._active))
+    def getActive(self):
         return self._active
 
-    @isActive.setter
-    def isActive(self, is_active):
-        self.setActive(is_active)
-
-    def setActive(self, is_active):
-        print("{} setActive({})".format(self._name, is_active))
-        if is_active is not self._active or True:
-            self._active = is_active
+    def setActive(self, newActive):
+        if newActive is not self._active or True:
+            self._active = newActive
             if self._active:
                 self.show_window()
-            #self.isActiveChanged.emit()
+            self.activeChanged.emit()
 
+    active = pyqtProperty(bool, fget=getActive, fset=setActive, notify=activeChanged)
 
     @pyqtSlot(QImage)
-    def processImage(self, image):
+    def processImage(self, image: QImage):
         if self._active:
 
             pointer = image.bits()
             pointer.setsize(image.byteCount())
             array = np.array(pointer).reshape(image.height(), image.width(), 4)
+
+            # get rid of the transparency channel and organize the colors as rgb
+            # NB: it would be safer to figure out the image format first, and where the transparency channel is
+            # stored...
+            array = array[:, :, 0:3:][:, :, ::-1]
 
             self.process_frame(array)
 
@@ -89,22 +76,22 @@ class PluginModel(QAbstractListModel):
     class PluginRoles(Enum):
         NameRole = Qt.UserRole + 1
         DescriptionRole = Qt.UserRole + 2
-        IsActiveRole = Qt.UserRole + 3
+        ActiveRole = Qt.UserRole + 3
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._plugins = []
 
     def roleNames(self):
-        roles = {}
-        roles[self.PluginRoles.NameRole.value] = b"name"
-        roles[self.PluginRoles.DescriptionRole.value] = b"description"
-        roles[self.PluginRoles.IsActiveRole.value] = b"isActive"
+        roles = {self.PluginRoles.NameRole.value: b"name",
+                 self.PluginRoles.DescriptionRole.value: b"description",
+                 self.PluginRoles.ActiveRole.value: b"active"}
         return roles
 
     def addPlugin(self, plugin: Plugin):
         self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
         self._plugins.append(plugin)
+        plugin.activeChanged.connect(self.updateFrontEnd)
         self.endInsertRows()
 
     def getPlugins(self):
@@ -114,7 +101,6 @@ class PluginModel(QAbstractListModel):
         return len(self._plugins)
 
     def data(self, index: QModelIndex, role: int):
-        print("data({}, {}) called".format(index.row(), role))
         if index.row() < 0 or index.row() >= len(self._plugins):
             return QVariant()
 
@@ -123,18 +109,26 @@ class PluginModel(QAbstractListModel):
             return plugin.name
         elif role == self.PluginRoles.DescriptionRole.value:
             return plugin.description
-        elif role == self.PluginRoles.IsActiveRole.value:
-            return plugin.isActive
+        elif role == self.PluginRoles.ActiveRole.value:
+            return plugin.active
 
         return QVariant()
 
-
-
+    def updateFrontEnd(self):
+        # when active status is changed, it should be shown in the user interface
+        # this is quite lazy and just updates everything:
+        first = self.index(0)
+        number_plugins = len(self._plugins)
+        if number_plugins > 0:
+            last = self.index(len(self._plugins)-1)
+        else:
+            last = first
+        self.dataChanged.emit(first, last)
 
 
 class PluginLoader(QObject):
 
-    pluginsChanged = pyqtSignal(QAbstractListModel, arguments=['plugins'])
+    pluginsChanged = pyqtSignal()
     imageAvailable = pyqtSignal(QImage, arguments=['image'])
 
     def __init__(self, parent=None):
@@ -156,9 +150,7 @@ class PluginLoader(QObject):
                     continue
 
                 try:
-                    plugin = Plugin()
-                    plugin.name = plugin_import.name
-                    plugin.description = plugin_import.description
+                    plugin = Plugin(plugin_import.name, plugin_import.description)
                     plugin.process_frame = plugin_import.process_frame
                     plugin.init = plugin_import.init
                     plugin.show_window = plugin_import.show_window
@@ -170,8 +162,7 @@ class PluginLoader(QObject):
 
                 except Exception as err:
                     print("Error importing plugin {} !\n{}".format(file, err))
-
-        self.pluginsChanged.emit(self._plugins)
+        self.pluginsChanged.emit()
 
     @pyqtProperty(type=QAbstractListModel, notify=pluginsChanged)
     def plugins(self):
@@ -180,7 +171,6 @@ class PluginLoader(QObject):
     @pyqtSlot(int, bool)
     def activatePlugin(self, index, active):
         self._plugins.getPlugins()[index].setActive(active)
-
 
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')

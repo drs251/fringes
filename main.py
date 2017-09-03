@@ -2,7 +2,7 @@ import sys
 from os import path
 
 import PyQt5
-from PyQt5.QtCore import QObject, QUrl, QCoreApplication, QVariant, pyqtSlot
+from PyQt5.QtCore import QObject, QUrl, QCoreApplication, QVariant, pyqtSlot, QTimer
 from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtQml import qmlRegisterType, QQmlComponent, QQmlEngine, QQmlApplicationEngine
@@ -23,7 +23,7 @@ frameGrabber = VideoFrameGrabber(source=camera)
 context.setContextProperty("frameGrabber", frameGrabber)
 context.setContextProperty("camera", camera)
 
-engine.load(path.abspath(path.join(path.dirname(__file__), 'main.qml')))
+engine.load('./qml/main.qml')
 root = engine.rootObjects()[0]
 
 pluginloader = root.findChild(PluginLoader, "pluginloader")

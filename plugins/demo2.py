@@ -2,9 +2,9 @@ import plugin_canvas
 import random
 import numpy as np
 
-name = "Dummy 1"
+name = "Demo 2"
 
-description = "A dummy plugin"
+description= "Plots the sum of all columns of pixels"
 
 # the area for plotting:
 canvas = None
@@ -33,9 +33,8 @@ def process_frame(frame: np.ndarray):
     """
     global canvas
     canvas.figure.clear()
-    #print("dummy1 process frame")
-    # random data
-    data = [random.random() for _ in range(10)]
+
+    data = frame.sum(0)
 
     # create an axis
     ax = canvas.figure.add_subplot(111)
@@ -44,7 +43,8 @@ def process_frame(frame: np.ndarray):
     # ax.hold(False)
 
     # plot data
-    ax.plot(data, '*-')
+    ax.plot(data, '-')
+    ax.legend(("red", "green", "blue"))
 
     # refresh canvas
     canvas.canvas.draw()

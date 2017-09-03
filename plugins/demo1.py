@@ -2,9 +2,9 @@ import plugin_canvas
 import random
 import numpy as np
 
-name = "Dummy 2"
+name = "Demo 1"
 
-description= "Another dummy plugin"
+description = "A demo plugin that shows some random data"
 
 # the area for plotting:
 canvas = None
@@ -33,8 +33,9 @@ def process_frame(frame: np.ndarray):
     """
     global canvas
     canvas.figure.clear()
-
-    data = frame.sum(0)
+    #print("dummy1 process frame")
+    # random data
+    data = [random.random() for _ in range(10)]
 
     # create an axis
     ax = canvas.figure.add_subplot(111)
@@ -43,7 +44,7 @@ def process_frame(frame: np.ndarray):
     # ax.hold(False)
 
     # plot data
-    ax.plot(data, '-')
+    ax.plot(data, '*-')
 
     # refresh canvas
     canvas.canvas.draw()

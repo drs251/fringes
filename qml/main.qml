@@ -14,34 +14,7 @@ ApplicationWindow {
     height: 540 //720
     title: "Fringes"
 
-
-//    Camera {
-//        id: camera
-//        objectName: "camera"
-//
-//        imageProcessing {
-//            whiteBalanceMode: CameraImageProcessing.WhiteBalanceManual
-//            denoisingLevel: -1
-//            sharpeningLevel: -1
-//        }
-//
-//        exposure {
-//            manualIso: 400
-//            exposureCompensation: -1.0
-//            exposureMode: Camera.ExposureManual
-//            meteringMode: CameraExposure.MeteringMatrix
-//            //manualShutterSpeed: bottom_menu.exposure_time
-//            onManualShutterSpeedChanged: {
-//                console.log("manual shutter speed " + camera.exposure.manualShutterSpeed)
-//                console.log("shutter speed " + camera.exposure.shutterSpeed)
-//                console.log("exposureMode " + camera.exposure.exposureMode)
-//                console.log("iso " + camera.exposure.iso)
-//            }
-//        }
-//
-//    }
-
-
+    // This shows the original video from the camera
     VideoOutput {
         id: output
         source: frameGrabber
@@ -191,64 +164,10 @@ ApplicationWindow {
     }
 
 
-    // The plugin dialog
-    Dialog {
-        id: pluginDialog
-        title: "Manage plugins"
-        standardButtons: StandardButton.Ok
-        height: 550
-
-        PluginLoader {
-            id: pluginloader
-            objectName: "pluginloader"
-
-
-        }
-
-        // The list containing the plugins
-        ListView {
-            height: 400
-            anchors.left: parent.left
-            anchors.right: parent.right
-
-            model: pluginloader.plugins
-
-            // How each item should look like
-            delegate: Rectangle {
-                height: 80
-
-                Row {
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    CheckBox {
-                        id: pluginCheckbox
-                        checked: isActive
-                        onClicked: {
-                            pluginloader.activatePlugin(index, checked)
-                            //console.log(name + " " + isActive + " " + checked)
-                        }
-                    }
-
-                    Column {
-
-                        Label {
-                            id: nameLabel
-                            text: name
-                        }
-
-                        Label {
-                            id: descriptionLabel
-                            text: description
-                        }
-
-                    }
-
-                }
-            }
-
-
-        }
+    PluginDialog {
+        id:pluginDialog
     }
+
 
 
     TopMenu {
@@ -261,8 +180,6 @@ ApplicationWindow {
         property var savedImage
 
         onSaveImage: {
-            // https://stackoverflow.com/questions/39939565/error-saving-qml-item-as-image-to-file-using-grabtoimage
-            // https://doc.qt.io/qt-5/qml-qtquick-dialogs-filedialog.html
             output.grabToImage(function(result) {
                 top_menu.savedImage = result
                 saveImageDialog.open()
@@ -283,15 +200,12 @@ ApplicationWindow {
         anchors.right: parent.right
 
         onExposure_timeChanged: {
-            //camera.exposure.manualShutterSpeed = exposure_time
         }
 
         onAuto_exposureChanged: {
             if(auto_exposure) {
-                //camera.exposure.exposureMode = CameraExposure.ExposurePortrait // maybe NightPortrait?
             }
             else {
-                //camera.exposure.exposureMode = CameraExposure.ExposureManual
             }
         }
 

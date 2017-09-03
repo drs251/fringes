@@ -1,6 +1,6 @@
-name = "Dummy 3"
+name = "Demo 3"
 
-description= "A third dummy plugin"
+description= "An empty demo plugin"
 
 
 def init(parent=None, send_data_function=None):
