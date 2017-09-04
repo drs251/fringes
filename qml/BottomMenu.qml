@@ -83,7 +83,7 @@ Item {
                 CheckBox {
                     id: auto_checkbox
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 100
+                    width: 50
                     height: 50
                     text: "Auto"
                     //checked: true
@@ -142,33 +142,31 @@ Item {
                             bottomMenu.resetZoom()
                         }
                     }
+                }
 
-                    Column {
-                        spacing: 20
+                Column {
+                    spacing: 20
 
-                        Button {
-                            width: 100
-                            height: 50
-                            id: clip_button
-                            text: "Clip data"
-                            checkable: true
-                        }
+                    Button {
+                        width: 100
+                        height: 50
+                        id: clip_button
+                        text: "Clip data"
+                        checkable: true
+                    }
 
-                        Button {
-                            width: 100
-                            height: 50
-                            id: reset_clip_button
-                            text: "Reset"
-                            onClicked: {
-                                clip_button.checked = false
-                                bottomMenu.clipping()
-                            }
+                    Button {
+                        width: 100
+                        height: 50
+                        id: reset_clip_button
+                        text: "Reset"
+                        onClicked: {
+                            clip_button.checked = false
+                            bottomMenu.resetClipping()
                         }
                     }
                 }
-
             }
-
         }
     }
 }

@@ -142,6 +142,60 @@ ApplicationWindow {
     }
 
 
+    // This canvas is to clip the images before sending them to the plugins
+    Canvas {
+        id: clip_canvas
+        anchors.fill: parent
+        enabled: bottom_menu.enableClipping
+        property real startX
+        property real startY
+        property real lastX
+        property real lastY
+        property real centerX
+        property real centerY
+        property real zoom_scale
+        property bool drawing: false
+
+        onPaint: {
+            var ctx = getContext('2d')
+            ctx.reset()
+            if(clip_canvas.drawing) {
+                ctx.lineWidth = 1
+                ctx.strokeStyle = 'rgba(0, 255, 0, 1.0)'
+                ctx.fillStyle = 'rgba(100, 255, 100, 0.5)'
+                ctx.beginPath()
+                lastX = clip_mouse_area.mouseX
+                lastY = clip_mouse_area.mouseY
+                ctx.rect(startX, startY, lastX-startX, lastY-startY)
+                ctx.fillRect(startX, startY, lastX-startX, lastY-startY)
+                ctx.stroke()
+            }
+        }
+
+        MouseArea {
+            id: clip_mouse_area
+            anchors.fill: parent
+            enabled: bottom_menu.enableClipping
+
+            onPressed: {
+                clip_canvas.drawing = true
+                clip_canvas.startX = mouseX
+                clip_canvas.startY = mouseY
+                clip_canvas.requestPaint()
+            }
+            onPositionChanged: {
+                clip_canvas.requestPaint()
+            }
+            onReleased: {
+                //clip_canvas.drawing = false
+                //clip_canvas.requestPaint()
+
+                // TODO: send QSize to pluginloader or vidoe_frame_grabber
+            }
+        }
+    }
+
+
     // The dialog for saving images
     FileDialog {
         id: saveImageDialog
@@ -216,6 +270,13 @@ ApplicationWindow {
             zoomScale.yScale = 1
             zoomTranslate.x = 0
             zoomTranslate.y = 0
+        }
+
+        onResetClipping: {
+            clip_canvas.drawing = false
+            clip_canvas.requestPaint()
+
+            // TODO: reset the clipping in video_frame_grabber
         }
     }
 
