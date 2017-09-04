@@ -188,25 +188,23 @@ ApplicationWindow {
                 clip_canvas.requestPaint()
             }
             onReleased: {
-                //clip_canvas.drawing = false
-                //clip_canvas.requestPaint()
                 var x1 = clip_canvas.startX
                 var x2 = clip_canvas.lastX
                 var y1 = clip_canvas.startY
                 var y2 = clip_canvas.lastY
 
-                if(x1 > x2) {
-                    var temp = x1
-                    x1 = x2
-                    x2 = temp
-                }
-                if(y1 > y2) {
-                    var temp = y1
-                    y1 = y2
-                    y2 = temp
-                }
+                //if(x1 > x2) {
+                //    var temp = x1
+                //    x1 = x2
+                //    x2 = temp
+                // }
+                //if(y1 > y2) {
+                //    var temp = y1
+                //    y1 = y2
+                //    y2 = temp
+                //}
 
-                pluginDialog.loader.setClipping(x1, x2, x2-x1, y2-y1)
+                pluginDialog.loader.setClipping(x1, y1, x2, y2, output.contentRect.width, output.contentRect.height)
             }
         }
     }
@@ -294,7 +292,7 @@ ApplicationWindow {
             clip_canvas.drawing = false
             clip_canvas.requestPaint()
 
-            pluginDialog.loader.setClipping(0, 0, 0, 0)
+            pluginDialog.loader.setClipping(0, 0, 0, 0, 0, 0)
         }
     }
 

@@ -2,7 +2,7 @@ import os
 import importlib
 
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, QAbstractListModel, Qt, QModelIndex, \
-    QVariant, QSize, QRect
+    QVariant, QSize, QRect, QRectF
 from PyQt5.QtMultimedia import QVideoFrame, QVideoFilterRunnable, QAbstractVideoFilter
 from PyQt5.QtQml import qmlRegisterType, QQmlListProperty
 from PyQt5.QtGui import QImage, QPixelFormat
@@ -24,7 +24,7 @@ class Plugin(QObject):
         self.init = None
         self.show_window = None
         self._active = False
-        self._clipSize = QRect()
+        self._clipSize = QRectF()
 
     def getName(self):
         return self._name
@@ -55,9 +55,17 @@ class Plugin(QObject):
     def processImage(self, image: QImage):
         if self._active:
 
-            if self._clipSize == QRect():
-                # no clipping takes place:
-                pointer = image.bits()
+            if self._clipSize != QRectF():
+                # scale according to rectangle selected in main window:
+                orig_size = image.rect()
+                new_size = QRect(int(self._clipSize.x() * orig_size.width()),
+                             int(self._clipSize.y() * orig_size.height()),
+                             int(self._clipSize.width() * orig_size.width()),
+                             int(self._clipSize.height() * orig_size.height()))
+                image = image.copy(new_size)
+
+            try:
+                pointer = image.constBits()
                 pointer.setsize(image.byteCount())
                 array = np.array(pointer).reshape(image.height(), image.width(), 4)
 
@@ -66,11 +74,9 @@ class Plugin(QObject):
                 # stored...
                 array = array[:, :, 0:3:][:, :, ::-1]
 
-            else:
-                # TODO: this should clip the data before sending it
-                pass
-
-            self.process_frame(array)
+                self.process_frame(array)
+            except Exception as err:
+                print(err)
 
 
 qmlRegisterType(Plugin, 'Plugins', 1, 0, 'Plugin')
@@ -140,7 +146,7 @@ class PluginLoader(QObject):
 
     pluginsChanged = pyqtSignal()
     imageAvailable = pyqtSignal(QImage, arguments=['image'])
-    clipSizeChanged = pyqtSignal(QRect)
+    clipSizeChanged = pyqtSignal(QRectF)
 
     def __init__(self, parent=None):
 
@@ -185,12 +191,13 @@ class PluginLoader(QObject):
     def activatePlugin(self, index, active):
         self._plugins.getPlugins()[index].setActive(active)
 
-    @pyqtSlot(int, int, int, int)
-    def setClipping(self, x, y, width, height):
-        if x == 0 and y == 0 and width == 0 and height == 0:
-            self._clipSize = QRect()
+    @pyqtSlot(int, int, int, int, int, int)
+    def setClipping(self, x1, y1, x2, y2, window_width, window_height):
+        if x1 == 0 and y1 == 0 and x2 == 0 and y2 == 0:
+            self._clipSize = QRectF()
         else:
-            self._clipSize = QRect(x, y, width, height)
+            self._clipSize = QRectF(x1/window_width, y1/window_height,
+                                    abs(x2-x1)/window_width, abs(y2-y1)/window_height).normalized()
         self.clipSizeChanged.emit(self._clipSize)
 
 
