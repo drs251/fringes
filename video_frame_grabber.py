@@ -14,6 +14,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
     imageAvailable = pyqtSignal(QImage, name='imageAvailable')
     flush = pyqtSignal()
     videoSurfaceChanged = pyqtSignal(QAbstractVideoSurface)
+    frameskipChanged = pyqtSignal()
 
     supportedFormats = [
         QVideoFrame.Format_ARGB32,
@@ -43,7 +44,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._counter = 0
         self._pixelFormat = None
         self._frameSize = None
-        self.frameskip = 2
+        self._frameskip = 4
         self.setSource(source)
 
     @pyqtProperty(QAbstractVideoSurface, notify=videoSurfaceChanged)
@@ -61,6 +62,16 @@ class VideoFrameGrabber(QAbstractVideoSurface):
             self._formats = self._surface.supportedPixelFormats()
             self._nativeResolution = self._surface.nativeResolution()
 
+    @pyqtProperty(int, notify=frameskipChanged)
+    def frameskip(self):
+        return self._frameskip
+
+    @frameskip.setter
+    def frameskip(self, newFrameskip):
+        if newFrameskip != self._frameskip:
+            self._frameskip = newFrameskip
+            self.frameskipChanged.emit()
+
     def supportedPixelFormats(self, handleType):
         return self.supportedFormats
 
@@ -71,7 +82,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         if frame.isValid():
             if self._surface is not None:
                 self._surface.present(frame)
-            self._counter = (self._counter + 1) % self.frameskip
+            self._counter = (self._counter + 1) % self._frameskip
             if self._counter == 0:
                 self.imageFromFrame(frame)
             return True

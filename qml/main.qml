@@ -147,6 +147,7 @@ ApplicationWindow {
         id: clip_canvas
         anchors.fill: parent
         enabled: bottom_menu.enableClipping
+        visible: bottom_menu.enableClipping
         property real startX
         property real startY
         property real lastX
@@ -189,8 +190,23 @@ ApplicationWindow {
             onReleased: {
                 //clip_canvas.drawing = false
                 //clip_canvas.requestPaint()
+                var x1 = clip_canvas.startX
+                var x2 = clip_canvas.lastX
+                var y1 = clip_canvas.startY
+                var y2 = clip_canvas.lastY
 
-                // TODO: send QSize to pluginloader or vidoe_frame_grabber
+                if(x1 > x2) {
+                    var temp = x1
+                    x1 = x2
+                    x2 = temp
+                }
+                if(y1 > y2) {
+                    var temp = y1
+                    y1 = y2
+                    y2 = temp
+                }
+
+                pluginDialog.loader.setClipping(x1, x2, x2-x1, y2-y1)
             }
         }
     }
@@ -220,6 +236,8 @@ ApplicationWindow {
 
     PluginDialog {
         id:pluginDialog
+
+        onSkipFramesChanged: frameGrabber.frameskip = skipFrames
     }
 
 
@@ -276,7 +294,7 @@ ApplicationWindow {
             clip_canvas.drawing = false
             clip_canvas.requestPaint()
 
-            // TODO: reset the clipping in video_frame_grabber
+            pluginDialog.loader.setClipping(0, 0, 0, 0)
         }
     }
 

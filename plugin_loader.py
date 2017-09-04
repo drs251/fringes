@@ -2,7 +2,7 @@ import os
 import importlib
 
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, QAbstractListModel, Qt, QModelIndex, \
-    QVariant
+    QVariant, QSize, QRect
 from PyQt5.QtMultimedia import QVideoFrame, QVideoFilterRunnable, QAbstractVideoFilter
 from PyQt5.QtQml import qmlRegisterType, QQmlListProperty
 from PyQt5.QtGui import QImage, QPixelFormat
@@ -24,6 +24,7 @@ class Plugin(QObject):
         self.init = None
         self.show_window = None
         self._active = False
+        self._clipSize = QRect()
 
     def getName(self):
         return self._name
@@ -47,18 +48,27 @@ class Plugin(QObject):
 
     active = pyqtProperty(bool, fget=getActive, fset=setActive, notify=activeChanged)
 
+    def setClipSize(self, rect: QRect):
+        self._clipSize = rect
+
     @pyqtSlot(QImage)
     def processImage(self, image: QImage):
         if self._active:
 
-            pointer = image.bits()
-            pointer.setsize(image.byteCount())
-            array = np.array(pointer).reshape(image.height(), image.width(), 4)
+            if self._clipSize == QRect():
+                # no clipping takes place:
+                pointer = image.bits()
+                pointer.setsize(image.byteCount())
+                array = np.array(pointer).reshape(image.height(), image.width(), 4)
 
-            # get rid of the transparency channel and organize the colors as rgb
-            # NB: it would be safer to figure out the image format first, and where the transparency channel is
-            # stored...
-            array = array[:, :, 0:3:][:, :, ::-1]
+                # get rid of the transparency channel and organize the colors as rgb
+                # NB: it would be safer to figure out the image format first, and where the transparency channel is
+                # stored...
+                array = array[:, :, 0:3:][:, :, ::-1]
+
+            else:
+                # TODO: this should clip the data before sending it
+                pass
 
             self.process_frame(array)
 
@@ -130,6 +140,7 @@ class PluginLoader(QObject):
 
     pluginsChanged = pyqtSignal()
     imageAvailable = pyqtSignal(QImage, arguments=['image'])
+    clipSizeChanged = pyqtSignal(QRect)
 
     def __init__(self, parent=None):
 
@@ -137,6 +148,7 @@ class PluginLoader(QObject):
         self._plugin_folder = "plugins"
         self._plugins = PluginModel()
         self._probe = None
+        self._clipSize = QSize()
 
         # find candidates for plugins
         for file in os.listdir("./" + self._plugin_folder):
@@ -156,6 +168,7 @@ class PluginLoader(QObject):
                     plugin.show_window = plugin_import.show_window
                     plugin.init(None, lambda x, plugin=plugin: plugin.setActive(x))
                     self.imageAvailable.connect(plugin.processImage)
+                    self.clipSizeChanged.connect(plugin.setClipSize)
 
                     # if it was possible to import it, the plugin goes in the list:
                     self._plugins.addPlugin(plugin)
@@ -171,6 +184,14 @@ class PluginLoader(QObject):
     @pyqtSlot(int, bool)
     def activatePlugin(self, index, active):
         self._plugins.getPlugins()[index].setActive(active)
+
+    @pyqtSlot(int, int, int, int)
+    def setClipping(self, x, y, width, height):
+        if x == 0 and y == 0 and width == 0 and height == 0:
+            self._clipSize = QRect()
+        else:
+            self._clipSize = QRect(x, y, width, height)
+        self.clipSizeChanged.emit(self._clipSize)
 
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')

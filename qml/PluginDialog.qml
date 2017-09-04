@@ -7,8 +7,17 @@ import Plugins 1.0
 
 // The plugin dialog
 Item {
+
+    property alias skipFrames: skipframesSpinbox.value
+    property alias loader: pluginloader
+
     function open() {
         dialog.open()
+    }
+
+    PluginLoader {
+        id: pluginloader
+        objectName: "pluginloader"
     }
 
     Dialog {
@@ -17,62 +26,68 @@ Item {
         standardButtons: StandardButton.Ok
         height: 550
 
-        PluginLoader {
-            id: pluginloader
-            objectName: "pluginloader"
+        Column {
+            anchors.fill: parent
 
-
-        }
-
-        // The list containing the plugins
-        ListView {
-            height: 400
-            width: parent.width
-            anchors.left: parent.left
-            anchors.right: parent.right
-
-            model: pluginloader.plugins
-
-            // What each item should look like
-            delegate: Rectangle {
-                height: 80
+            // The list containing the plugins
+            ListView {
+                height: 400
                 width: parent.width
+                anchors.left: parent.left
+                anchors.right: parent.right
 
-                Row {
-                    anchors.verticalCenter: parent.verticalCenter
+                model: pluginloader.plugins
 
-                    CheckBox {
-                        id: pluginCheckbox
-                        // TODO: only correct on start, does not update:
-                        checked: active
-                        onClicked: {
-                            pluginloader.activatePlugin(index, checked)
-                            // this restores the binding to the model, so that the checkbox state is updated:
-                            checked = Qt.binding(function() {
-                                return active
-                            })
+                // What each item should look like
+                delegate: Rectangle {
+                    height: 80
+                    width: parent.width
+
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        CheckBox {
+                            id: pluginCheckbox
+                            checked: active
+                            onClicked: {
+                                pluginloader.activatePlugin(index, checked)
+                                if(checked) {
+                                    dialog.close()
+                                }
+                                // this restores the binding to the model, so that the checkbox state is updated:
+                                checked = Qt.binding(function() {
+                                    return active
+                                })
+                            }
+                        }
+
+                        Column {
+
+                            Label {
+                                id: nameLabel
+                                text: name
+                            }
+
+                            Label {
+                                id: descriptionLabel
+                                text: description
+                                wrapMode: Text.Wrap
+                            }
                         }
                     }
-
-                    Column {
-
-                        Label {
-                            id: nameLabel
-                            text: name
-                        }
-
-                        Label {
-                            id: descriptionLabel
-                            text: description
-                            wrapMode: Text.Wrap
-                        }
-
-                    }
-
                 }
             }
 
-
+            Row {
+                Label {
+                    text: "skip # of frames"
+                }
+                SpinBox {
+                    id: skipframesSpinbox
+                    value: frameGrabber.frameskip
+                }
+            }
         }
+
     }
 }
