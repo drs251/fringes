@@ -1,5 +1,4 @@
-import os
-import importlib
+import os, importlib
 
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, QAbstractListModel, Qt, QModelIndex, \
     QVariant, QSize, QRect, QRectF

@@ -23,6 +23,12 @@ frameGrabber = VideoFrameGrabber(source=camera)
 context.setContextProperty("frameGrabber", frameGrabber)
 context.setContextProperty("camera", camera)
 
+try:
+    import tis_settings
+
+except ImportError as err:
+    print("unable to load tis_settings module.\n" + err)
+
 engine.load('./qml/main.qml')
 root = engine.rootObjects()[0]
 

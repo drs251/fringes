@@ -38,6 +38,8 @@ class PluginCanvas(QtWidgets.QDialog):
         layout.addWidget(self.ontopCheckbox)
         self.setLayout(layout)
 
+        self.resize(350, 350)
+
     def set_name(self, name):
         self.setWindowTitle(name)
 
