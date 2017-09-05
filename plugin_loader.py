@@ -196,8 +196,10 @@ class PluginLoader(QObject):
         if x1 == 0 and y1 == 0 and x2 == 0 and y2 == 0:
             self._clipSize = QRectF()
         else:
+            x1, x2 = sorted((x1, x2))
+            y1, y2 = sorted((y1, y2))
             self._clipSize = QRectF(x1/window_width, y1/window_height,
-                                    abs(x2-x1)/window_width, abs(y2-y1)/window_height).normalized()
+                                    abs(x2-x1)/window_width, abs(y2-y1)/window_height)
         self.clipSizeChanged.emit(self._clipSize)
 
 
