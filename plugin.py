@@ -2,6 +2,7 @@ from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QRe
 from PyQt5.QtQml import qmlRegisterType
 from PyQt5.QtGui import QImage
 import numpy as np
+import traceback, sys
 
 
 class Plugin(QObject):
@@ -69,8 +70,10 @@ class Plugin(QObject):
                 array = array[:, :, 0:3:][:, :, ::-1]
 
                 self.process_frame(array)
-            except Exception as err:
-                print(err)
+            except Exception:
+                print("Error running plugin {}!\n".format(self._name), file=sys.stderr)
+                traceback.print_exc()
+                print()
 
 
 qmlRegisterType(Plugin, 'Plugins', 1, 0, 'Plugin')

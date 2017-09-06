@@ -1,4 +1,4 @@
-import os, importlib
+import os, importlib, traceback, sys
 from enum import Enum
 
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QAbstractListModel, Qt, QModelIndex, \
@@ -106,8 +106,10 @@ class PluginLoader(QObject):
                     # if it was possible to import it, the plugin goes in the list:
                     self._plugins.addPlugin(plugin)
 
-                except Exception as err:
-                    print("Error importing plugin {} !\n{}".format(file, err))
+                except Exception:
+                    print("Error importing plugin {}!\n".format(file), file=sys.stderr)
+                    traceback.print_exc()
+                    print()
         self.pluginsChanged.emit()
 
     @pyqtProperty(type=QAbstractListModel, notify=pluginsChanged)

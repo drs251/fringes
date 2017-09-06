@@ -20,7 +20,7 @@ import plugin_loader
 app = QApplication(sys.argv)
 
 loader = plugin_loader.PluginLoader()
-plugin = loader.plugins.getPlugins()[4]
+plugin = loader.plugins.getPlugins()[5]
 plugin.active = True
 
 image_width = 1280
@@ -50,3 +50,5 @@ runner = Runner()
 timer.timeout.connect(runner.run)
 timer.start(100)
 app.exec_()
+
+# initial version of fourier2d takes 0.9-1.0 s for 1280x720
