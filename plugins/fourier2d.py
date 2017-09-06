@@ -14,7 +14,7 @@ description = "2D Fourier transformation"
 
 class FFTPlugin(QObject):
     class PlotThread(QThread):
-        def __init__(self, parent: FFTPlugin):
+        def __init__(self, parent):
             super().__init__(parent)
             self.parent = parent
             self.frame = None
@@ -27,7 +27,12 @@ class FFTPlugin(QObject):
             # self.ax3.cla()
 
             # convert data to grayscale:
-            data = self.frame.sum(axis=2)
+            data = self.frame.sum(axis=2).astype(np.float64)
+
+            # apply window function to get rid of artifacts:
+            width, height = data.shape
+            window = np.outer(np.hanning(width), np.hanning(height))
+            data *= window
 
             # calculate and plot transform
             transform, transform_abs = vtc.fourier_transform(data, 300)
@@ -45,17 +50,16 @@ class FFTPlugin(QObject):
             found_blobs = blobs.shape[0] == 3
 
             self.parent.blob_label.setText("Blobs found: {}".format(blobs.shape[0]))
-            #print("blobs found:" + str(blobs.shape[0]))
             if 0 < blobs.shape[0] < 30:
                 # plot all blobs in blue
                 for i in range(blobs.shape[0]):
-                    circle = plt.Circle((blobs[i, 0], blobs[i, 1]), blobs[i, 2], edgecolor='blue', facecolor="None")
+                    circle = plt.Circle((blobs[i, 1], blobs[i, 0]), blobs[i, 2], edgecolor='blue', facecolor="None")
                     self.parent.ax1.add_artist(circle)
 
             if found_blobs:
                 # determine the main blob and plot in green
                 main_blob = vtc.pick_blob(blobs)
-                circle = plt.Circle((main_blob[0], main_blob[1]), main_blob[2], edgecolor='green', facecolor="None")
+                circle = plt.Circle((main_blob[1], main_blob[0]), main_blob[2], edgecolor='green', facecolor="None")
                 self.parent.ax1.add_artist(circle)
 
                 # calculate and plot the inverse transform and phase
