@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QThread, QObject
-from PyQt5.QtWidgets import QHBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QWidget, QComboBox
+from PyQt5.QtWidgets import QHBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QWidget, QComboBox, QLabel
 
 import plugin_canvas
 import numpy as np
@@ -14,14 +14,15 @@ description = "2D Fourier transformation"
 
 class FFTPlugin(QObject):
     class PlotThread(QThread):
-        def __init__(self, parent):
+        def __init__(self, parent: FFTPlugin):
             super().__init__(parent)
             self.parent = parent
             self.frame = None
 
         def run(self):
             # clear axes
-            # self.ax1.cla()
+            self.parent.ax1.cla()
+            self.parent.ax1.set_title("FFT")
             # self.ax2.cla()
             # self.ax3.cla()
 
@@ -43,7 +44,8 @@ class FFTPlugin(QObject):
                                    overlap=overlap, threshold=threshold, method=method)
             found_blobs = blobs.shape[0] == 3
 
-            print("blobs found:" + str(blobs.shape[0]))
+            self.parent.blob_label.setText("Blobs found: {}".format(blobs.shape[0]))
+            #print("blobs found:" + str(blobs.shape[0]))
             if 0 < blobs.shape[0] < 30:
                 # plot all blobs in blue
                 for i in range(blobs.shape[0]):
@@ -86,7 +88,7 @@ class FFTPlugin(QObject):
         self.canvas = plugin_canvas.PluginCanvas(parent, send_data_function)
         self.canvas.set_name(name)
 
-        self.canvas.toolbar.setVisible(False)
+        #self.canvas.toolbar.setVisible(False)
         self.canvas.resize(700, 350)
 
         # make fields to enter parameters:
@@ -124,7 +126,10 @@ class FFTPlugin(QObject):
 
         param_widget = QWidget()
         param_widget.setLayout(self.canvas.param_layout)
-        self.canvas.layout.insertWidget(2, param_widget)
+        self.canvas.layout.insertWidget(1, param_widget)
+
+        self.blob_label = QLabel("Blobs found: #")
+        self.canvas.layout.insertWidget(2, self.blob_label)
 
         # create an axis
         self.ax1 = self.canvas.figure.add_subplot(131)
@@ -138,59 +143,6 @@ class FFTPlugin(QObject):
         if not self.plotThread.isRunning():
             self.plotThread.frame = frame
             self.plotThread.start()
-
-        # # clear axes
-        # #self.ax1.cla()
-        # #self.ax2.cla()
-        # #self.ax3.cla()
-        #
-        # # convert data to grayscale:
-        # data = frame.sum(axis=2)
-        #
-        # # calculate and plot transform
-        # transform, transform_abs = vtc.fourier_transform(data, 300)
-        # transform_plot = self.ax1.imshow(transform_abs, norm=LogNorm(vmin=0.01, vmax=transform_abs.max()), cmap='inferno')
-        #
-        # # find blobs
-        # min_sigma = self.parameter_boxes["min_sigma"].value()
-        # max_sigma = self.parameter_boxes["max_sigma"].value()
-        # overlap = self.parameter_boxes["overlap"].value()
-        # threshold = self.parameter_boxes["threshold"].value()
-        # method = self.parameter_boxes["method"].currentText()
-        # blobs = vtc.find_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
-        #                        overlap=overlap, threshold=threshold, method=method)
-        # found_blobs = blobs.shape[0] == 3
-        #
-        # print("blobs found:" + str(blobs.shape[0]))
-        # if 0 < blobs.shape[0] < 30:
-        #     # plot all blobs in blue
-        #     for i in range(blobs.shape[0]):
-        #         circle = plt.Circle((blobs[i, 0], blobs[i, 1]), blobs[i, 2], edgecolor='blue', facecolor="None")
-        #         self.ax1.add_artist(circle)
-        #
-        # if found_blobs:
-        #     # determine the main blob and plot in green
-        #     main_blob = vtc.pick_blob(blobs)
-        #     circle = plt.Circle((main_blob[0], main_blob[1]), main_blob[2], edgecolor='green', facecolor="None")
-        #     self.ax1.add_artist(circle)
-        #
-        #     # calculate and plot the inverse transform and phase
-        #     shifted_transform = vtc.mask_and_shift(transform, main_blob[0], main_blob[1], main_blob[2])
-        #     backtransform, backtransform_abs, backtransform_phase = vtc.inv_fourier_transform(shifted_transform)
-        #
-        #     backtransform_plot = self.ax2.imshow(backtransform_abs, cmap='gray')
-        #     phase_plot = self.ax3.imshow(backtransform_phase, cmap='viridis')
-        #
-        # else:
-        #     backtransform_plot = self.ax2.imshow(np.array([[0, 0], [0, 0]]), cmap='gray')
-        #     phase_plot = self.ax3.imshow(np.array([[0, 0], [0, 0]]), cmap='viridis')
-        #
-        #     # canvas.figure.colorbar(transform_plot)
-        #     # canvas.figure.colorbar(backtransform_plot)
-        #     # canvas.figure.colorbar(phase_plot)
-        #
-        # # refresh canvas
-        # self.canvas.canvas.draw()
 
 
 plugin = None

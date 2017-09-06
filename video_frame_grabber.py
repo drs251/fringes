@@ -82,7 +82,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         if frame.isValid():
             if self._surface is not None:
                 self._surface.present(frame)
-            self._counter = (self._counter + 1) % self._frameskip
+            self._counter = (self._counter + 1) % (self._frameskip + 1)
             if self._counter == 0:
                 self.imageFromFrame(frame)
             return True

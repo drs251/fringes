@@ -24,7 +24,7 @@ class PluginCanvas(QtWidgets.QDialog):
 
         # this is the Navigation widget
         # it takes the Canvas widget and a parent
-        self.toolbar = NavigationToolbar(self.canvas, self)
+        # self.toolbar = NavigationToolbar(self.canvas, self)
 
         self.ontopCheckbox = QtWidgets.QCheckBox("Stay on top")
         self.ontopCheckbox.setChecked(True)
@@ -33,7 +33,7 @@ class PluginCanvas(QtWidgets.QDialog):
         # set the layout
         layout = QtWidgets.QVBoxLayout()
         self.layout = layout
-        layout.addWidget(self.toolbar)
+        # layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         layout.addWidget(self.ontopCheckbox)
         self.setLayout(layout)

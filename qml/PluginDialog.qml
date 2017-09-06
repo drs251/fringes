@@ -1,11 +1,10 @@
 import QtQuick 2.5
 import QtQuick.Controls 1.4
 import QtQuick.Dialogs 1.2
-//import Qt.labs.settings 1.0
+import QtQuick.Layouts 1.3
 import Plugins 1.0
 
 
-// The plugin dialog
 Item {
 
     property alias skipFrames: skipframesSpinbox.value
@@ -35,18 +34,26 @@ Item {
                 width: parent.width
                 anchors.left: parent.left
                 anchors.right: parent.right
+                Layout.fillHeight: true
 
                 model: pluginloader.plugins
 
                 // What each item should look like
                 delegate: Rectangle {
-                    height: 80
+                    height: 60
                     width: parent.width
 
-                    Row {
-                        anchors.verticalCenter: parent.verticalCenter
+                    GridLayout {
+                        //anchors.verticalCenter: parent.verticalCenter
+                        columns: 2
+                        anchors.fill: parent
+
 
                         CheckBox {
+                            width: 10
+                            height: 10
+                            Layout.rowSpan: 2
+
                             id: pluginCheckbox
                             checked: active
                             onClicked: {
@@ -61,24 +68,26 @@ Item {
                             }
                         }
 
-                        Column {
+                        Label {
+                            Layout.fillWidth: true
+                            id: nameLabel
+                            text: name
+                            font.bold: true
+                        }
 
-                            Label {
-                                id: nameLabel
-                                text: name
-                            }
-
-                            Label {
-                                id: descriptionLabel
-                                text: description
-                                wrapMode: Text.Wrap
-                            }
+                        Text {
+                            Layout.fillWidth: true
+                            id: descriptionLabel
+                            text: description
+                            wrapMode: Text.WordWrap
+                            Layout.bottomMargin: 30
                         }
                     }
                 }
             }
 
             Row {
+                height:40
                 Label {
                     text: "skip # of frames"
                 }
