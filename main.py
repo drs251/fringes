@@ -27,7 +27,7 @@ try:
     import tis_settings
 
 except ImportError as err:
-    print("unable to load tis_settings module.\n" + err)
+    print("unable to load tis_settings module: " + str(err))
 
 engine.load('./qml/main.qml')
 root = engine.rootObjects()[0]
