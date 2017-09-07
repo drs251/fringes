@@ -33,6 +33,29 @@ ApplicationWindow {
     }
 
 
+    // This shows two red lines for alignment
+    Canvas {
+        id: line_canvas
+        anchors.fill:parent
+        visible: top_menu.show_lines
+
+        onPaint: {
+            var ctx = line_canvas.getContext("2d");
+            var cwidth = line_canvas.width;
+            var cheight = line_canvas.height;
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "red"
+            ctx.beginPath();
+            ctx.moveTo(cwidth / 2, 0);
+            ctx.lineTo(cwidth / 2, cheight);
+            ctx.stroke();
+            ctx.moveTo(0, cheight / 2);
+            ctx.lineTo(cwidth, cheight / 2);
+            ctx.stroke()
+        }
+    }
+
+
     // This controls the zooming operation, including drawing the box and setting the magnification
     Canvas {
         id: zoom_canvas

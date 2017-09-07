@@ -15,6 +15,7 @@ Item {
 
     signal saveImage()
     signal managePlugins()
+    property alias show_lines: lines_button.checked
 
     Rectangle {
         anchors.fill: parent
@@ -59,9 +60,9 @@ Item {
                 }
 
                 Button {
-                    id: freeze_button
-                    text: "Freeze"
-                    enabled: false
+                    id: lines_button
+                    text: "Show lines"
+                    checkable: true
                 }
 
                 Button {
