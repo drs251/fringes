@@ -118,6 +118,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._source = source
         source.setViewfinder(self)
         self._source.start()
+        # TODO: rethink these two lines:
         self._frameSize = self._source.supportedViewfinderResolutions()[-1]
         self._pixelFormat = self._source.supportedViewfinderPixelFormats()[-1]
         return True

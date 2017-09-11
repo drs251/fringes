@@ -18,13 +18,22 @@ app.setWindowIcon(QIcon('fringes.png'))
 engine = QQmlApplicationEngine()
 context = engine.rootContext()
 
-camera = QCamera()
-frameGrabber = VideoFrameGrabber(source=camera)
-context.setContextProperty("frameGrabber", frameGrabber)
-context.setContextProperty("camera", camera)
+# print("available cameras (Qt):")
+# cameras = QCameraInfo.availableCameras()
+# for i, camera in enumerate(cameras):
+#     print(str(i) + "> " + camera.description())
+# if len(cameras) > 1:
+#     cam_number = int(input("Select number: "))
+#     camera = QCamera(cameras[cam_number])
+# else:
+#     camera = QCamera()
+#
+# frameGrabber = VideoFrameGrabber(source=camera)
+# context.setContextProperty("frameGrabber", frameGrabber)
+# context.setContextProperty("camera", camera)
 
 try:
-    import tis_settings
+    import tis_cam.tis_settings
 
 except ImportError as err:
     print("unable to load tis_settings module: " + str(err))
@@ -33,6 +42,6 @@ engine.load('./qml/main.qml')
 root = engine.rootObjects()[0]
 
 pluginloader = root.findChild(PluginLoader, "pluginloader")
-frameGrabber.imageAvailable.connect(pluginloader.imageAvailable)
+#frameGrabber.imageAvailable.connect(pluginloader.imageAvailable)
 
 sys.exit(app.exec_())
