@@ -63,19 +63,21 @@ Item {
                         width: 500
                         height: 50
                         text: "Exposure time (ms)"
-                        from: 1
-                        to: 1000
-                        value: 50
+                        from: tisSettings.minExposure
+                        to: tisSettings.maxExposure
+                        value: tisSettings.exposureTime
+                        onValueChanged: tisSettings.exposureTime = value
                     }
 
                     BoxSlider {
                         id: gain_slider
                         width: 500
                         height: 50
-                        text: "Gain (db)"
-                        from: 0
-                        to: 40
-                        value: 0
+                        text: "Gain (0.1 dB)"
+                        from: tisSettings.minGain
+                        to: tisSettings.maxGain
+                        value: tisSettings.gain
+                        onValueChanged: tisSettings.gain = value
                     }
 
                 }

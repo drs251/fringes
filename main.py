@@ -32,9 +32,12 @@ context = engine.rootContext()
 # context.setContextProperty("frameGrabber", frameGrabber)
 # context.setContextProperty("camera", camera)
 
+# On windows, it should be possible to connect to the TIS camera
+# backend, which enables setting gain and exposure
 try:
-    import tis_cam.tis_settings
-
+    import tis_cam.tis_settings as tis
+    tisSettings = tis.TisSettings(app)
+    context.setContextProperty("tisSettings", tisSettings)
 except ImportError as err:
     print("unable to load tis_settings module: " + str(err))
 

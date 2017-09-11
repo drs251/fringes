@@ -1,14 +1,14 @@
 import win32com.client as com
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, qDebug
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, qDebug, pyqtSlot
 
 
 # a decorator for easy checking that the device is valid
 # before a function is run
 def _ensure_valid(func):
     def wrapper(self, *args, **kwargs):
-        if not self._control.DeviceValid:
+        if not self._valid:
             raise RuntimeError("Operation on invalid device!")
-        func(self, *args, **kwargs)
+        return func(self, *args, **kwargs)
     return wrapper
 
 
@@ -16,10 +16,18 @@ class TisSettings(QObject):
 
     exposureTimeChanged = pyqtSignal(int)
     gainChanged = pyqtSignal(int)
+    rangesChanged = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._control = com.Dispatch("IC.ICImagingControl3")
+        devices = self._get_available_devices()
+        # TODO: make sure that one can choose an arbitrary camera
+        if len(devices) > 0:
+            self._control.DeviceUniqueName = self._get_unique_name(devices[0])
+            if not self._valid:
+                qDebug("TisSettings: Could not get valid device.")
+
 
     def _clear_interface(self):
         if self._control.DeviceValid:
@@ -40,6 +48,9 @@ class TisSettings(QObject):
         _, serial = device.GetSerialNumber()
         name = device.Name
         return name + " " + serial
+
+    def _valid(self):
+        return self._control.DeviceValid
 
     def _show_dialog(self):
         self._control.ShowDeviceSettingsDialog()
@@ -131,3 +142,42 @@ class TisSettings(QObject):
                 self.gainChanged.emit(newGain)
         except Exception as err:
             qDebug("Could not set gain. " + str(err))
+
+    @pyqtProperty(int, notify=rangesChanged)
+    def minGain(self):
+        try:
+            return self._get_gain_range()[0]
+        except Exception as err:
+            qDebug("Could not get minGain. " + str(err))
+            return 0
+
+    @pyqtProperty(int, notify=rangesChanged)
+    def maxGain(self):
+        try:
+            return self._get_gain_range()[1]
+        except Exception as err:
+            qDebug("Could not get maxGain. " + str(err))
+            return 2
+
+    @pyqtProperty(int, notify=rangesChanged)
+    def minExposure(self):
+        try:
+            rng = self._get_exposure_range()
+            return rng[0]
+        except Exception as err:
+            qDebug("Could not get minExposure. " + str(err))
+            return 1
+
+    @pyqtProperty(int, notify=rangesChanged)
+    def maxExposure(self):
+        try:
+            rng = self._get_exposure_range()
+            # avoid exposure times greater than one second:
+            return min(rng[1], 10000)
+        except Exception as err:
+            qDebug("Could not get maxExposure. " + str(err))
+            return 3
+
+    @pyqtSlot()
+    def updateValues(self):
+        self.rangesChanged.emit()

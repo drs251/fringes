@@ -18,9 +18,14 @@ Item {
             style: SliderStyle {
                 groove: Rectangle {
                     implicitWidth: 300
-                    implicitHeight: 6
+                    implicitHeight: 5
                     color: "gray"
-                    radius: 6
+                    radius: 5
+                    //Rectangle {
+                    //    implicitHeight: 5
+                    //    color: "blue"
+                    //    implicitWidth: control.value * control.width
+                    //}
                 }
             }
             onValueChanged: {
