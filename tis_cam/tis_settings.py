@@ -17,10 +17,17 @@ class TisSettings(QObject):
     exposureTimeChanged = pyqtSignal(int)
     gainChanged = pyqtSignal(int)
     rangesChanged = pyqtSignal()
+    manualModeChanged = pyqtSignal()
+
+    # to convert the values from TIS into nice units:
+    _gain_factor = 10
+    _exposure_factor = 10
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._control = com.Dispatch("IC.ICImagingControl3")
+        self._manualMode = True
+
         devices = self._get_available_devices()
         # TODO: make sure that one can choose an arbitrary camera
         if len(devices) > 0:
@@ -59,7 +66,7 @@ class TisSettings(QObject):
 
     @_ensure_valid
     def _get_exposure(self):
-        return self._control.Exposure
+        return self._control.Exposure / self._exposure_factor
 
     @_ensure_valid
     def _get_exposure_range(self):
@@ -83,7 +90,7 @@ class TisSettings(QObject):
 
     @_ensure_valid
     def _get_gain(self):
-        return self._control.Gain
+        return self._control.Gain / self._gain_factor
 
     @_ensure_valid
     def _get_gain_range(self):
@@ -91,7 +98,7 @@ class TisSettings(QObject):
 
     @_ensure_valid
     def _set_exposure(self, exposure):
-        exposure = int(exposure)
+        exposure = int(exposure * self._exposure_factor)
         rng = self._get_exposure_range()
         if not rng[0] <= exposure <= rng[1]:
             raise ValueError("Exposure parameter {} is outside of allowed range {}".format(exposure, rng))
@@ -100,14 +107,14 @@ class TisSettings(QObject):
 
     @_ensure_valid
     def _set_gain(self, gain):
-        gain = int(gain)
+        gain = int(gain * self._gain_factor)
         rng = self._get_gain_range()
         if not rng[0] <= gain <= rng[1]:
             raise ValueError("Gain parameter {} is outside of allowed range {}".format(gain, rng))
         self._set_auto_gain(False)
         self._control.Gain = gain
 
-    @pyqtProperty(int, notify=exposureTimeChanged)
+    @pyqtProperty(float, notify=exposureTimeChanged)
     def exposureTime(self):
         try:
             r_time = self._get_exposure()
@@ -117,7 +124,7 @@ class TisSettings(QObject):
         return r_time
 
     @exposureTime.setter
-    def exposureTime(self, newTime: int):
+    def exposureTime(self, newTime):
         try:
             if newTime != self._get_exposure:
                 self._set_exposure(newTime)
@@ -125,7 +132,7 @@ class TisSettings(QObject):
         except Exception as err:
             qDebug("Could not set exposure time. " + str(err))
 
-    @pyqtProperty(int, notify=gainChanged)
+    @pyqtProperty(float, notify=gainChanged)
     def gain(self):
         try:
             r_gain = self._get_gain()
@@ -143,37 +150,37 @@ class TisSettings(QObject):
         except Exception as err:
             qDebug("Could not set gain. " + str(err))
 
-    @pyqtProperty(int, notify=rangesChanged)
+    @pyqtProperty(float, notify=rangesChanged)
     def minGain(self):
         try:
-            return self._get_gain_range()[0]
+            return self._get_gain_range()[0] / self._gain_factor
         except Exception as err:
             qDebug("Could not get minGain. " + str(err))
             return 0
 
-    @pyqtProperty(int, notify=rangesChanged)
+    @pyqtProperty(float, notify=rangesChanged)
     def maxGain(self):
         try:
-            return self._get_gain_range()[1]
+            return self._get_gain_range()[1] / self._gain_factor
         except Exception as err:
             qDebug("Could not get maxGain. " + str(err))
             return 2
 
-    @pyqtProperty(int, notify=rangesChanged)
+    @pyqtProperty(float, notify=rangesChanged)
     def minExposure(self):
         try:
             rng = self._get_exposure_range()
-            return rng[0]
+            return rng[0] / self._exposure_factor
         except Exception as err:
             qDebug("Could not get minExposure. " + str(err))
             return 1
 
-    @pyqtProperty(int, notify=rangesChanged)
+    @pyqtProperty(float, notify=rangesChanged)
     def maxExposure(self):
         try:
             rng = self._get_exposure_range()
             # avoid exposure times greater than one second:
-            return min(rng[1], 10000)
+            return min(rng[1] / self._exposure_factor, 1000)
         except Exception as err:
             qDebug("Could not get maxExposure. " + str(err))
             return 3
@@ -181,3 +188,15 @@ class TisSettings(QObject):
     @pyqtSlot()
     def updateValues(self):
         self.rangesChanged.emit()
+
+    def getManualMode(self):
+        return self._manualMode
+
+    @pyqtSlot(bool)
+    def setManualMode(self, mode):
+        if mode != self._manualMode:
+            self._manualMode = mode
+            self.manualModeChanged.emit()
+            qDebug("manualMode changed to " + str(mode))
+
+    manualMode = pyqtProperty(bool, fget=getManualMode, fset=setManualMode, notify=manualModeChanged)

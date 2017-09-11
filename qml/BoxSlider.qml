@@ -42,6 +42,7 @@ Item {
         SpinBox {
             id: spinbox
             Layout.alignment: Layout.Left
+            decimals: 1
             onValueChanged: {
                 slider.value = value
             }

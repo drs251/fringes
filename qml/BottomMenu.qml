@@ -60,6 +60,7 @@ Item {
 
                     BoxSlider {
                         id: exposure_slider
+                        enabled: tisSettings.manualMode
                         width: 500
                         height: 50
                         text: "Exposure time (ms)"
@@ -71,9 +72,10 @@ Item {
 
                     BoxSlider {
                         id: gain_slider
+                        enabled: tisSettings.manualMode
                         width: 500
                         height: 50
-                        text: "Gain (0.1 dB)"
+                        text: "Gain (dB)"
                         from: tisSettings.minGain
                         to: tisSettings.maxGain
                         value: tisSettings.gain
@@ -89,9 +91,8 @@ Item {
                     height: 50
                     text: "Auto"
                     //checked: true
-                    onCheckedChanged: {
-                        exposure_slider.enabled = !checked
-                        gain_slider.enabled = !checked
+                    onClicked: {
+                        tisSettings.setManualMode(!checked)
                     }
                 }
 
