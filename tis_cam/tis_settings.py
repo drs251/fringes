@@ -1,5 +1,6 @@
 import win32com.client as com
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, qDebug, pyqtSlot
+import numpy as np
 
 
 # a decorator for easy checking that the device is valid
@@ -18,6 +19,7 @@ class TisSettings(QObject):
     gainChanged = pyqtSignal(int)
     rangesChanged = pyqtSignal()
     manualModeChanged = pyqtSignal()
+    activeChanged = pyqtSignal()
 
     # to convert the values from TIS into nice units:
     _gain_factor = 10
@@ -26,19 +28,26 @@ class TisSettings(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._control = com.Dispatch("IC.ICImagingControl3")
-        self._manualMode = True
+        self._manualMode = False
+        self._active = False
 
         devices = self._get_available_devices()
         # TODO: make sure that one can choose an arbitrary camera
+        qDebug("Available TIS devices:")
+        for dev in devices:
+            qDebug(self._get_unique_name(dev))
         if len(devices) > 0:
             self._control.DeviceUniqueName = self._get_unique_name(devices[0])
             if not self._valid:
                 qDebug("TisSettings: Could not get valid device.")
+            else:
+                self._active = True
+                self._manualMode = True
 
     @pyqtSlot('QString')
     def setSourceFromDeviceId(self, devId):
+        qDebug("setSourceFromDeviceId: " + devId)
         # TODO: implement this!
-        pass
 
 
     def _clear_interface(self):
@@ -205,3 +214,21 @@ class TisSettings(QObject):
             qDebug("manualMode changed to " + str(mode))
 
     manualMode = pyqtProperty(bool, fget=getManualMode, fset=setManualMode, notify=manualModeChanged)
+
+    @pyqtProperty(bool)
+    def active(self):
+        return self._active
+
+    @active.setter
+    def setActive(self, new_active):
+        if new_active != self._active:
+            self._active = new_active
+            self.activeChanged.emit()
+            if not self._active:
+                self.manualMode = False
+
+    @pyqtSlot(np.ndarray)
+    def receiveFrameData(self, frame):
+        if self.manualMode:
+            return
+        # TODO: implement auto-exposure here

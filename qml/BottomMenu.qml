@@ -87,10 +87,10 @@ Item {
                 CheckBox {
                     id: auto_checkbox
                     anchors.verticalCenter: parent.verticalCenter
+                    enabled: tisSettings.active
                     width: 50
                     height: 50
                     text: "Auto"
-                    //checked: true
                     onClicked: {
                         tisSettings.setManualMode(!checked)
                     }
