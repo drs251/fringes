@@ -18,19 +18,18 @@ app.setWindowIcon(QIcon('fringes.png'))
 engine = QQmlApplicationEngine()
 context = engine.rootContext()
 
-# print("available cameras (Qt):")
-# cameras = QCameraInfo.availableCameras()
-# for i, camera in enumerate(cameras):
-#     print(str(i) + "> " + camera.description())
-# if len(cameras) > 1:
-#     cam_number = int(input("Select number: "))
-#     camera = QCamera(cameras[cam_number])
-# else:
-#     camera = QCamera()
-#
-# frameGrabber = VideoFrameGrabber(source=camera)
-# context.setContextProperty("frameGrabber", frameGrabber)
-# context.setContextProperty("camera", camera)
+print("available cameras (Qt):")
+cameras = QCameraInfo.availableCameras()
+for i, camera in enumerate(cameras):
+    print(str(i) + "> " + camera.description())
+if len(cameras) > 1:
+    cam_number = int(input("Select number: "))
+    camera = QCamera(cameras[cam_number])
+else:
+    camera = QCamera()
+
+frameGrabber = VideoFrameGrabber()
+context.setContextProperty("frameGrabber", frameGrabber)
 
 # On windows, it should be possible to connect to the TIS camera
 # backend, which enables setting gain and exposure
@@ -44,7 +43,8 @@ except ImportError as err:
 engine.load('./qml/main.qml')
 root = engine.rootObjects()[0]
 
+frameGrabber.setSource(camera)
 pluginloader = root.findChild(PluginLoader, "pluginloader")
-#frameGrabber.imageAvailable.connect(pluginloader.imageAvailable)
+frameGrabber.imageAvailable.connect(pluginloader.imageAvailable)
 
 sys.exit(app.exec_())

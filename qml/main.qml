@@ -14,14 +14,15 @@ ApplicationWindow {
     height: 540 //720
     title: "Fringes"
 
-    Camera {
-        id: camera
-    }
+    // Camera {
+    //     id: camera
+    // }
 
     // This shows the original video from the camera
     VideoOutput {
         id: output
-        source: camera   // was: frameGrabber
+        objectName: "output"
+        source: frameGrabber
         anchors.fill: parent
         //fillMode: VideoOutput.PreserveAspectCrop
         focus: visible // to receive focus and capture key events when visible
