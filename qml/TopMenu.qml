@@ -53,9 +53,10 @@ Item {
                     model: QtMultimedia.availableCameras
                     textRole: 'displayName'
                     onCurrentIndexChanged: {
-                        //console.log(model[currentIndex].displayName)
-                        //console.log(model[currentIndex].deviceId)
-                        //camera.deviceId = model[currentIndex].deviceId
+                        console.log(model[currentIndex].displayName)
+                        console.log(model[currentIndex].deviceId)
+                        frameGrabber.setSourceFromDeviceId(model[currentIndex].deviceId)
+                        tisSettings.setSourceFromDeviceId(model[currentIndex].deviceId)
                     }
                 }
 

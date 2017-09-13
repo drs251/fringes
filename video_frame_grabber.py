@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType
+from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, qDebug
 from PyQt5.QtMultimedia import QVideoFrame, QAbstractVideoSurface, QCamera, QCameraViewfinderSettings, \
     QVideoSurfaceFormat, QAbstractVideoBuffer, QCameraInfo
 from PyQt5.QtQml import qmlRegisterType
@@ -64,7 +64,6 @@ class VideoFrameGrabber(QAbstractVideoSurface):
 
     # method for QAbstractVideoSurface
     def present(self, frame: QVideoFrame):
-        print("present")
         if frame.isValid():
             if self._surface is not None:
                 self._surface.present(frame)
@@ -76,17 +75,20 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         if self._conversionInProgress:
             # not to have multiple conversions running at the same time...
             return
+        self._conversionInProgress = True
+
         pixel_format = frame.pixelFormat()
-        print("frame arrived with pixel format", pixel_format)
+        # print("frame arrived with pixel format", pixel_format)
         image_format = QVideoFrame.imageFormatFromPixelFormat(pixel_format)
         if image_format == QImage.Format_Invalid:
-            print("WARNING: Could not convert video frame to image!")
+            qDebug("WARNING: Could not convert video frame to image!")
+            self._conversionInProgress = False
             return
         if not frame.map(QAbstractVideoBuffer.ReadOnly):
-            print("WARNING: Could not map video frame!")
+            qDebug("WARNING: Could not map video frame!")
+            self._conversionInProgress = False
             return
 
-        self._conversionInProgress = True
         width = frame.width()
         height = frame.height()
         bytes_per_line = frame.bytesPerLine()
@@ -101,12 +103,18 @@ class VideoFrameGrabber(QAbstractVideoSurface):
     def setSource(self, source: QCamera) -> bool:
         if source is None and self._surface is None:
             return False
+        if source is self._source:
+            return True
+        if self._source is not None:
+            self._source.stop()
+        self._surface.stop()
+
         self._source = source
         source.setViewfinder(self)
-        self._source.start()
+        source.start()
         error = source.error()
         if error != QCamera.NoError:
-            print("Camera error: ", error)
+            qDebug("Camera error: ", error)
         self._resolution = self._source.viewfinderSettings().resolution()
         # this would be the obvious solution, but does not work (see above):
         # self._pixelFormat = self._source.viewfinderSettings().pixelFormat()
@@ -117,9 +125,14 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         video_format.setScanLineDirection(self._surface.surfaceFormat().scanLineDirection())
         # video_format.setScanLineDirection(QVideoSurfaceFormat.BottomToTop)
         if not self._surface.start(video_format):
-            print("error in starting video surface!")
+            qDebug("error in starting video surface!")
 
         return True
+
+    @pyqtSlot('QString')
+    def setSourceFromDeviceId(self, devId):
+        camera = QCamera(bytes(devId, encoding='utf-8'))
+        self.setSource(camera)
 
     def isActive(self) -> bool:
         return self._source is not None

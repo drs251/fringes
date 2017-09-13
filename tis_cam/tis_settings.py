@@ -35,6 +35,11 @@ class TisSettings(QObject):
             if not self._valid:
                 qDebug("TisSettings: Could not get valid device.")
 
+    @pyqtSlot('QString')
+    def setSourceFromDeviceId(self, devId):
+        # TODO: implement this!
+        pass
+
 
     def _clear_interface(self):
         if self._control.DeviceValid:
