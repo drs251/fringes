@@ -1,9 +1,10 @@
+import platform
+
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, qDebug
 from PyQt5.QtMultimedia import QVideoFrame, QAbstractVideoSurface, QCamera, QCameraViewfinderSettings, \
     QVideoSurfaceFormat, QAbstractVideoBuffer, QCameraInfo
-from PyQt5.QtQml import qmlRegisterType
 from PyQt5.QtGui import QImage
-import typing
+
 
 
 class VideoFrameGrabber(QAbstractVideoSurface):
@@ -122,8 +123,9 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._pixelFormat = self.supportedFormats[0]
 
         video_format = QVideoSurfaceFormat(self._resolution, self._pixelFormat)
-        video_format.setScanLineDirection(self._surface.surfaceFormat().scanLineDirection())
-        # video_format.setScanLineDirection(QVideoSurfaceFormat.BottomToTop)
+        # yet another workaround for a bug, this time for upside-down video
+        if platform.system() == "Windows":
+            video_format.setScanLineDirection(QVideoSurfaceFormat.BottomToTop)
         if not self._surface.start(video_format):
             qDebug("error in starting video surface!")
 
