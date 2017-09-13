@@ -17,9 +17,10 @@ class VideoFrameGrabber(QAbstractVideoSurface):
 
     # normally, one should get the supported formats from the output surface
     # this is a workaround to a bug, in which qcamera sometimes (on windows, of course!) does not provide the correct
-    # video frame format which it will use. RGB32 seems to work with most cameras and surfaces...
+    # video frame format which it will use. RGB32 and ARGB32 seem to work with most cameras and surfaces...
     supportedFormats = [
-        QVideoFrame.Format_RGB32
+        QVideoFrame.Format_RGB32,
+        QVideoFrame.Format_ARGB32
     ]
 
     def __init__(self, parent=None):
@@ -109,7 +110,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._resolution = self._source.viewfinderSettings().resolution()
         # this would be the obvious solution, but does not work (see above):
         # self._pixelFormat = self._source.viewfinderSettings().pixelFormat()
-        # instead:
+        # instead: not 100% correct, but works (except that video is flipped on windows...)
         self._pixelFormat = self.supportedFormats[0]
 
         video_format = QVideoSurfaceFormat(self._resolution, self._pixelFormat)
