@@ -7,6 +7,8 @@ from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtQml import qmlRegisterType, QQmlComponent, QQmlEngine, QQmlApplicationEngine
 from PyQt5.QtMultimedia import QVideoProbe, QCamera, QVideoFrame, QCameraInfo, QAbstractVideoSurface
+# this import needs to come before QApplication is created, "to avoid bugs":
+import pyqtgraph
 
 from plugin_loader import PluginLoader
 from video_frame_grabber import VideoFrameGrabber
