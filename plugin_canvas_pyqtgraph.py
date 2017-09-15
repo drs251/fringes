@@ -15,6 +15,7 @@ class PluginCanvasPyqtgraph(QtWidgets.QDialog):
 
         # a place to put plots
         self.layoutWidget = pg.GraphicsLayoutWidget()
+        self.layoutWidget.setBackground(None)
         pg.setConfigOptions(antialias=True, background=None, foreground='k')
 
         self.ontopCheckbox = QtWidgets.QCheckBox("Stay on top")
