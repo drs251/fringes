@@ -1,5 +1,6 @@
 import os, importlib, traceback, sys
 from enum import Enum
+import numpy as np
 
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QAbstractListModel, Qt, QModelIndex, \
     QVariant, QSize, QRectF
@@ -72,7 +73,7 @@ class PluginModel(QAbstractListModel):
 class PluginLoader(QObject):
 
     pluginsChanged = pyqtSignal()
-    imageAvailable = pyqtSignal(QImage, arguments=['image'])
+    imageAvailable = pyqtSignal(np.ndarray)
     clipSizeChanged = pyqtSignal(QRectF)
 
     def __init__(self, parent=None):
@@ -101,7 +102,6 @@ class PluginLoader(QObject):
                     plugin.show_window = plugin_import.show_window
                     plugin.init(None, lambda x, plugin=plugin: plugin.setActive(x))
                     self.imageAvailable.connect(plugin.processImage)
-                    self.clipSizeChanged.connect(plugin.setClipSize)
 
                     # if it was possible to import it, the plugin goes in the list:
                     self._plugins.addPlugin(plugin)
@@ -119,17 +119,6 @@ class PluginLoader(QObject):
     @pyqtSlot(int, bool)
     def activatePlugin(self, index, active):
         self._plugins.getPlugins()[index].setActive(active)
-
-    @pyqtSlot(int, int, int, int, int, int)
-    def setClipping(self, x1, y1, x2, y2, window_width, window_height):
-        if x1 == 0 and y1 == 0 and x2 == 0 and y2 == 0:
-            self._clipSize = QRectF()
-        else:
-            x1, x2 = sorted((x1, x2))
-            y1, y2 = sorted((y1, y2))
-            self._clipSize = QRectF(x1/window_width, y1/window_height,
-                                    abs(x2-x1)/window_width, abs(y2-y1)/window_height)
-        self.clipSizeChanged.emit(self._clipSize)
 
 
 qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')

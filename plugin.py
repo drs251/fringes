@@ -19,7 +19,6 @@ class Plugin(QObject):
         self.init = None
         self.show_window = None
         self._active = False
-        self._clipSize = QRectF()
 
     def getName(self):
         return self._name
@@ -43,32 +42,11 @@ class Plugin(QObject):
 
     active = pyqtProperty(bool, fget=getActive, fset=setActive, notify=activeChanged)
 
-    def setClipSize(self, rect: QRect):
-        self._clipSize = rect
-
-    @pyqtSlot(QImage)
-    def processImage(self, image: QImage):
+    @pyqtSlot(np.ndarray)
+    def processImage(self, array: np.ndarray):
         if self._active:
 
-            if self._clipSize != QRectF():
-                # scale according to rectangle selected in main window:
-                orig_size = image.rect()
-                new_size = QRect(int(self._clipSize.x() * orig_size.width()),
-                             int(self._clipSize.y() * orig_size.height()),
-                             int(self._clipSize.width() * orig_size.width()),
-                             int(self._clipSize.height() * orig_size.height()))
-                image = image.copy(new_size)
-
             try:
-                pointer = image.constBits()
-                pointer.setsize(image.byteCount())
-                array = np.array(pointer).reshape(image.height(), image.width(), 4)
-
-                # get rid of the transparency channel and organize the colors as rgb
-                # NB: it would be safer to figure out the image format first, and where the transparency channel is
-                # stored...
-                array = array[:, :, 0:3:][:, :, ::-1]
-
                 self.process_frame(array)
             except Exception:
                 print("Error running plugin {}!\n".format(self._name), file=sys.stderr)

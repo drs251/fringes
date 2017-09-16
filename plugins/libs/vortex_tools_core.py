@@ -205,7 +205,7 @@ def find_3_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
 
     # try to find 3 or more blobs by decreasing the threshold until it's 0.001
     blobs = np.zeros((0, 3))
-    divisor = np.power(10., 1/3)
+    divisor = np.power(10., 1/2)
     while blobs.shape[0] < 3 and threshold > 0.001:
         blobs = find_blobs(transform, min_sigma, max_sigma, overlap, threshold, method)
         threshold /= divisor

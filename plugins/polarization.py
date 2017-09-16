@@ -59,7 +59,7 @@ class Worker(QThread):
 
             # convert frame to grayscale and rotate to give the correction orientation
             data = frame.sum(axis=2).astype(np.float64)
-            data = np.rot90(data, axes=(1,0))
+            data = np.rot90(data, axes=(1, 0))
 
             # split data in half and subtract the two halves:
             center = data.shape[0] // 2

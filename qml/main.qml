@@ -232,7 +232,7 @@ ApplicationWindow {
                 //    y2 = temp
                 //}
 
-                pluginDialog.loader.setClipping(x1, y1, x2, y2, output.contentRect.width, output.contentRect.height)
+                frameGrabber.loader.setClipping(x1, y1, x2, y2, output.contentRect.width, output.contentRect.height)
             }
         }
     }

@@ -1,6 +1,7 @@
 import platform
+import numpy as np
 
-from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, qDebug
+from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, qDebug, QRectF
 from PyQt5.QtMultimedia import QVideoFrame, QAbstractVideoSurface, QCamera, QCameraViewfinderSettings, \
     QVideoSurfaceFormat, QAbstractVideoBuffer, QCameraInfo
 from PyQt5.QtGui import QImage
@@ -12,7 +13,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
     of video data, to send it to Python plugins. QVideoFrames are collected, converted for Python, and the
     original frames are provided to a VideoOutput via the videoSurface property."""
 
-    imageAvailable = pyqtSignal(QImage, name='imageAvailable')
+    imageAvailable = pyqtSignal(np.ndarray)
     flush = pyqtSignal()
     videoSurfaceChanged = pyqtSignal(QAbstractVideoSurface)
 
@@ -33,6 +34,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._resolution = None
         self._supportedPixelFormats = self.supportedFormats
         self._nativeResolution = None
+        self._clipSize = QRectF()
 
     # This will probably never be called...
     @pyqtProperty(QAbstractVideoSurface, notify=videoSurfaceChanged)
@@ -78,6 +80,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
             return
         self._conversionInProgress = True
 
+        # convert QVideoFrame to QImage first (this is convenient for clipping)
         pixel_format = frame.pixelFormat()
         # print("frame arrived with pixel format", pixel_format)
         image_format = QVideoFrame.imageFormatFromPixelFormat(pixel_format)
@@ -97,8 +100,28 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         image = image.convertToFormat(QImage.Format_RGB32)
 
         frame.unmap()
-        self.imageAvailable.emit(image)
+
+        if self._clipSize != QRectF():
+            # scale according to rectangle selected in main window:
+            orig_size = image.rect()
+            new_size = QRect(int(self._clipSize.x() * orig_size.width()),
+                             int(self._clipSize.y() * orig_size.height()),
+                             int(self._clipSize.width() * orig_size.width()),
+                             int(self._clipSize.height() * orig_size.height()))
+            image = image.copy(new_size)
+
+        # now convert QImage to ndarray
+        pointer = image.constBits()
+        pointer.setsize(image.byteCount())
+        array = np.array(pointer).reshape(image.height(), image.width(), 4)
+
+        # get rid of the transparency channel and organize the colors as rgb
+        # NB: it would be safer to figure out the image format first, and where the transparency channel is
+        # stored...
+        array = array[:, :, 0:3:][:, :, ::-1]
+
         self._conversionInProgress = False
+        self.imageAvailable.emit(array)
 
     # video surface must be set before setting the camera!
     def setSource(self, source: QCamera) -> bool:
@@ -138,3 +161,13 @@ class VideoFrameGrabber(QAbstractVideoSurface):
 
     def isActive(self) -> bool:
         return self._source is not None
+
+    @pyqtSlot(int, int, int, int, int, int)
+    def setClipping(self, x1, y1, x2, y2, window_width, window_height):
+        if x1 == 0 and y1 == 0 and x2 == 0 and y2 == 0:
+            self._clipSize = QRectF()
+        else:
+            x1, x2 = sorted((x1, x2))
+            y1, y2 = sorted((y1, y2))
+            self._clipSize = QRectF(x1 / window_width, y1 / window_height,
+                                    abs(x2 - x1) / window_width, abs(y2 - y1) / window_height)
