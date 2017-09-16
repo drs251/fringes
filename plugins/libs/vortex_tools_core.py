@@ -152,7 +152,7 @@ def find_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
     """
     Finds blobs in a Fourier transform and returns their coordinates
 
-    :param transform: Complex numpy array containing a Fourier transform
+    :param transform: Complex numpy array containing a Fourier transform or real array assumed to contain the log of a FFT
     :param max_sigma: Largest blob size (Default: 15)
     :param min_sigma: Smallest blob size (Default: 10)
     :param overlap: Maximum allowed overlap fraction between two blobs (Default: 0.2)
@@ -162,7 +162,10 @@ def find_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
     (Default: 'log')
     :return: Array of [x, y, r] for each blob
     """
-    transform_log = np.log(np.abs(transform))
+    if np.iscomplexobj(transform):
+        transform_log = np.nan_to_num(np.log(np.abs(transform)))
+    else:
+        transform_log = transform
 
     threshold = transform_log.ptp() * threshold + transform_log.min()
 
@@ -178,6 +181,47 @@ def find_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
     blobs[:, 2] = blobs[:, 2] * np.sqrt(2)
 
     return blobs
+
+
+def find_3_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
+                 threshold=0.5, method='log'):
+    """
+    Attempts to find the three strongest blobs in a Fourier transform and returns their coordinates
+
+    :param transform: Complex numpy array containing a Fourier transform or real array assumed to contain the log of a FFT
+    :param max_sigma: Largest blob size (Default: 15)
+    :param min_sigma: Smallest blob size (Default: 10)
+    :param overlap: Maximum allowed overlap fraction between two blobs (Default: 0.2)
+    :param threshold: Starting point for the automatically adjusted threshold, defined as fraction between the lowest
+    and highest absolute value of the points in the transform
+    :param method: Peak finding method: 'log' for Laplacian of Gaussians, 'dog' for Difference of Gaussians
+    (Default: 'log')
+    :return: Array of [x, y, r] for each blob
+    """
+    if np.iscomplexobj(transform):
+        transform_log = np.nan_to_num(np.log(np.abs(transform)))
+    else:
+        transform_log = transform
+
+    # try to find 3 or more blobs by decreasing the threshold until it's 0.001
+    blobs = np.zeros((0, 3))
+    divisor = np.power(10., 1/3)
+    while blobs.shape[0] < 3 and threshold > 0.001:
+        blobs = find_blobs(transform, min_sigma, max_sigma, overlap, threshold, method)
+        threshold /= divisor
+    if blobs.shape[0] <= 3:
+        return blobs
+
+    # calculate the integral and return the three most intense blobs
+    blob_dict = {}
+    for blob in np.vsplit(blobs, blobs.shape[0]):
+        blob = blob.reshape(3)
+        integral = np.sum(apply_mask(transform, blob[0], blob[1], blob[2]))
+        blob_dict[integral] = blob
+    ret_blobs = []
+    for key in sorted(blob_dict.keys())[0:3]:
+        ret_blobs.append(blob_dict[key])
+    return np.array(ret_blobs)
 
 
 def apply_mask(transform, x, y, radius):

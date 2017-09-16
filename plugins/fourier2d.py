@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QThread, QObject, pyqtSignal, qDebug, QMutex, QWaitCondition
-from PyQt5.QtWidgets import QHBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QWidget, QComboBox, QLabel
+from PyQt5.QtWidgets import QHBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QWidget, QComboBox, QLabel, QCheckBox
 import pyqtgraph as pg
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +8,7 @@ import plugin_canvas_pyqtgraph
 import plugins.libs.vortex_tools_core as vtc
 
 
-name = "Fourier Transform 3"
+name = "Fourier Transform"
 description = "2D Fourier transformation with pyqtgraph"
 
 
@@ -65,9 +65,11 @@ class FFTWorker(QThread):
             overlap = parameters['overlap']
             threshold = parameters['threshold']
             method = parameters['method']
+            auto = parameters['auto']
 
-            # convert frame to grayscale
+            # convert frame to grayscale and rotate to give the correction orientation
             data = frame.sum(axis=2).astype(np.float64)
+            data = np.rot90(data, axes=(1,0))
 
             # apply window function to get rid of artifacts:
             width, height = data.shape
@@ -78,8 +80,12 @@ class FFTWorker(QThread):
             transform, transform_abs = vtc.fourier_transform(data, 300)
             transform_abs = np.nan_to_num(np.log(transform_abs))
 
-            blobs = vtc.find_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
-                                   overlap=overlap, threshold=threshold, method=method)
+            if auto:
+                blobs = vtc.find_3_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
+                                         overlap=overlap, threshold=threshold, method=method)
+            else:
+                blobs = vtc.find_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
+                                       overlap=overlap, threshold=threshold, method=method)
             found_3_blobs = blobs.shape[0] == 3
 
             if found_3_blobs:
@@ -130,7 +136,8 @@ class FFTPlugin2(QObject):
 
         # make fields to enter parameters:
         self.canvas.param_layout = QHBoxLayout()
-        self.canvas.parameter_boxes = {}
+        #self.canvas.parameter_boxes = {}
+        self.parameter_boxes["auto"] = QCheckBox("auto")
         for param in ["min_sigma", "max_sigma", "overlap", "threshold"]:
             if param == "min_sigma" or param == "max_sigma":
                 spin_box = QSpinBox()
@@ -140,12 +147,14 @@ class FFTPlugin2(QObject):
             group_box = QGroupBox(param)
             layout = QHBoxLayout()
             layout.addWidget(spin_box)
+            if param == "threshold":
+                layout.addWidget(self.parameter_boxes["auto"])
             group_box.setLayout(layout)
             self.canvas.param_layout.addWidget(group_box)
 
         combo_box = QComboBox()
-        combo_box.addItem("log")
         combo_box.addItem("dog")
+        combo_box.addItem("log")
         self.canvas.param_layout.addWidget(combo_box)
         self.parameter_boxes["method"] = combo_box
 
@@ -155,11 +164,12 @@ class FFTPlugin2(QObject):
         self.parameter_boxes["overlap"].setValue(0)
         self.parameter_boxes["overlap"].setSingleStep(0.05)
         self.parameter_boxes["overlap"].setMaximum(1)
-        self.parameter_boxes["threshold"].setValue(0.03)
-        self.parameter_boxes["threshold"].setSingleStep(0.005)
+        self.parameter_boxes["threshold"].setValue(0.3)
+        self.parameter_boxes["threshold"].setSingleStep(0.02)
         self.parameter_boxes["threshold"].setMaximum(1)
         self.parameter_boxes["threshold"].setDecimals(4)
-        self.parameter_boxes["method"].setCurrentText('log')
+        self.parameter_boxes["method"].setCurrentText('dog')
+        self.parameter_boxes["auto"].setChecked(True)
 
         param_widget = QWidget()
         param_widget.setLayout(self.canvas.param_layout)
@@ -237,7 +247,8 @@ class FFTPlugin2(QObject):
                       'max_sigma': self.parameter_boxes["max_sigma"].value(),
                       'overlap': self.parameter_boxes["overlap"].value(),
                       'threshold': self.parameter_boxes["threshold"].value(),
-                      'method': self.parameter_boxes["method"].currentText()}
+                      'method': self.parameter_boxes["method"].currentText(),
+                      'auto': self.parameter_boxes["auto"].isChecked()}
 
         self.frameAvailable.emit(frame, parameters)
 
