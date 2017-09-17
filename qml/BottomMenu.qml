@@ -60,26 +60,26 @@ Item {
 
                     BoxSlider {
                         id: exposure_slider
-                        enabled: tisSettings.manualMode
+                        enabled: cameraSettings.manualMode
                         width: 500
                         height: 50
                         text: "Exposure time (ms)"
-                        from: tisSettings.minExposure
-                        to: tisSettings.maxExposure
-                        value: tisSettings.exposureTime
-                        onValueChanged: tisSettings.exposureTime = value
+                        from: cameraSettings.minExposure
+                        to: cameraSettings.maxExposure
+                        value: cameraSettings.exposureTime
+                        onValueChanged: cameraSettings.exposureTime = value
                     }
 
                     BoxSlider {
                         id: gain_slider
-                        enabled: tisSettings.manualMode
+                        enabled: cameraSettings.manualMode
                         width: 500
                         height: 50
                         text: "Gain (dB)"
-                        from: tisSettings.minGain
-                        to: tisSettings.maxGain
-                        value: tisSettings.gain
-                        onValueChanged: tisSettings.gain = value
+                        from: cameraSettings.minGain
+                        to: cameraSettings.maxGain
+                        value: cameraSettings.gain
+                        onValueChanged: cameraSettings.gain = value
                     }
 
                 }
@@ -87,12 +87,12 @@ Item {
                 CheckBox {
                     id: auto_checkbox
                     anchors.verticalCenter: parent.verticalCenter
-                    enabled: tisSettings.active
+                    enabled: cameraSettings.active
                     width: 50
                     height: 50
                     text: "Auto"
                     onClicked: {
-                        tisSettings.setManualMode(!checked)
+                        cameraSettings.setManualMode(!checked)
                     }
                 }
 

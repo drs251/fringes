@@ -54,7 +54,7 @@ Item {
                     textRole: 'displayName'
                     onCurrentIndexChanged: {
                         frameGrabber.setSourceFromDeviceId(model[currentIndex].deviceId)
-                        tisSettings.setSourceFromDeviceId(model[currentIndex].deviceId)
+                        cameraSettings.setSourceFromDeviceId(model[currentIndex].deviceId)
                     }
                 }
 

@@ -12,6 +12,7 @@ import pyqtgraph
 
 from plugin_loader import PluginLoader
 from video_frame_grabber import VideoFrameGrabber
+from cam_settings import CameraSettings
 
 
 app = QApplication(sys.argv)
@@ -33,14 +34,8 @@ context = engine.rootContext()
 frameGrabber = VideoFrameGrabber()
 context.setContextProperty("frameGrabber", frameGrabber)
 
-# On windows, it should be possible to connect to the TIS camera
-# backend, which enables setting gain and exposure
-try:
-    import tis_cam.tis_settings as tis
-    tisSettings = tis.TisSettings(app)
-    context.setContextProperty("tisSettings", tisSettings)
-except ImportError as err:
-    print("unable to load tis_settings module: " + str(err))
+cameraSettings = CameraSettings(app)
+context.setContextProperty("cameraSettings", cameraSettings)
 
 engine.load('./qml/main.qml')
 root = engine.rootObjects()[0]
@@ -48,5 +43,6 @@ root = engine.rootObjects()[0]
 # frameGrabber.setSource(camera)
 pluginloader = root.findChild(PluginLoader, "pluginloader")
 frameGrabber.imageAvailable.connect(pluginloader.imageAvailable)
+frameGrabber.imageAvailable.connect(cameraSettings.receiveFrameData)
 
 sys.exit(app.exec_())

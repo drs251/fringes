@@ -13,20 +13,13 @@ def _ensure_valid(func):
     return wrapper
 
 
-class TisSettings(QObject):
-
-    exposureTimeChanged = pyqtSignal(int)
-    gainChanged = pyqtSignal(int)
-    rangesChanged = pyqtSignal()
-    manualModeChanged = pyqtSignal()
-    activeChanged = pyqtSignal()
+class TisSettings():
 
     # to convert the values from TIS into nice units:
     _gain_factor = 10
     _exposure_factor = 10
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
         self._control = com.Dispatch("IC.ICImagingControl3")
         self._manualMode = False
         self._active = False
@@ -44,7 +37,6 @@ class TisSettings(QObject):
                 self._active = True
                 self._manualMode = True
 
-    @pyqtSlot('QString')
     def setSourceFromDeviceId(self, devId):
         qDebug("setSourceFromDeviceId: " + devId)
         # TODO: implement this!
@@ -79,156 +71,57 @@ class TisSettings(QObject):
             raise RuntimeError("invalid device")
 
     @_ensure_valid
-    def _get_exposure(self):
+    def get_exposure(self):
         return self._control.Exposure / self._exposure_factor
 
     @_ensure_valid
-    def _get_exposure_range(self):
-        return self._control.ExposureRange
+    def get_exposure_range(self):
+        rng = self._control.ExposureRange
+        for i in len(rng):
+            rng[i] /= self._exposure_factor
+        return rng
 
     @_ensure_valid
-    def _is_auto_exposure(self):
+    def is_auto_exposure(self):
         return self._control.ExposureAuto
 
     @_ensure_valid
-    def _set_auto_exposure(self, auto):
+    def set_auto_exposure(self, auto):
         self._control.ExposureAuto = auto
 
     @_ensure_valid
-    def _is_auto_gain(self):
+    def is_auto_gain(self):
         return self._control.GainAuto
 
     @_ensure_valid
-    def _set_auto_gain(self, auto):
+    def set_auto_gain(self, auto):
         self._control.GainAuto = auto
 
     @_ensure_valid
-    def _get_gain(self):
+    def get_gain(self):
         return self._control.Gain / self._gain_factor
 
     @_ensure_valid
-    def _get_gain_range(self):
-        return self._control.GainRange
+    def get_gain_range(self):
+        rng = self._control.GainRange
+        for i in len(rng):
+            rng[i] /= self._gain_factor
+        return rng
 
     @_ensure_valid
-    def _set_exposure(self, exposure):
+    def set_exposure(self, exposure):
         exposure = int(exposure * self._exposure_factor)
-        rng = self._get_exposure_range()
+        rng = self._control.ExposureRange
         if not rng[0] <= exposure <= rng[1]:
             raise ValueError("Exposure parameter {} is outside of allowed range {}".format(exposure, rng))
-        self._set_auto_exposure(False)
+        self.set_auto_exposure(False)
         self._control.Exposure = exposure
 
     @_ensure_valid
-    def _set_gain(self, gain):
+    def set_gain(self, gain):
         gain = int(gain * self._gain_factor)
-        rng = self._get_gain_range()
+        rng = self._control.GainRange
         if not rng[0] <= gain <= rng[1]:
             raise ValueError("Gain parameter {} is outside of allowed range {}".format(gain, rng))
-        self._set_auto_gain(False)
+        self.set_auto_gain(False)
         self._control.Gain = gain
-
-    @pyqtProperty(float, notify=exposureTimeChanged)
-    def exposureTime(self):
-        try:
-            r_time = self._get_exposure()
-        except Exception as err:
-            qDebug("Could not get exposure time. " + str(err))
-            r_time = 1
-        return r_time
-
-    @exposureTime.setter
-    def exposureTime(self, newTime):
-        try:
-            if newTime != self._get_exposure:
-                self._set_exposure(newTime)
-                self.exposureTimeChanged.emit(newTime)
-        except Exception as err:
-            qDebug("Could not set exposure time. " + str(err))
-
-    @pyqtProperty(float, notify=gainChanged)
-    def gain(self):
-        try:
-            r_gain = self._get_gain()
-        except Exception as err:
-            qDebug("Could not get gain. " + str(err))
-            r_gain = 0
-        return r_gain
-
-    @gain.setter
-    def gain(self, newGain):
-        try:
-            if newGain != self._get_gain:
-                self._set_gain(newGain)
-                self.gainChanged.emit(newGain)
-        except Exception as err:
-            qDebug("Could not set gain. " + str(err))
-
-    @pyqtProperty(float, notify=rangesChanged)
-    def minGain(self):
-        try:
-            return self._get_gain_range()[0] / self._gain_factor
-        except Exception as err:
-            qDebug("Could not get minGain. " + str(err))
-            return 0
-
-    @pyqtProperty(float, notify=rangesChanged)
-    def maxGain(self):
-        try:
-            return self._get_gain_range()[1] / self._gain_factor
-        except Exception as err:
-            qDebug("Could not get maxGain. " + str(err))
-            return 2
-
-    @pyqtProperty(float, notify=rangesChanged)
-    def minExposure(self):
-        try:
-            rng = self._get_exposure_range()
-            return rng[0] / self._exposure_factor
-        except Exception as err:
-            qDebug("Could not get minExposure. " + str(err))
-            return 1
-
-    @pyqtProperty(float, notify=rangesChanged)
-    def maxExposure(self):
-        try:
-            rng = self._get_exposure_range()
-            # avoid exposure times greater than one second:
-            return min(rng[1] / self._exposure_factor, 1000)
-        except Exception as err:
-            qDebug("Could not get maxExposure. " + str(err))
-            return 3
-
-    @pyqtSlot()
-    def updateValues(self):
-        self.rangesChanged.emit()
-
-    def getManualMode(self):
-        return self._manualMode
-
-    @pyqtSlot(bool)
-    def setManualMode(self, mode):
-        if mode != self._manualMode:
-            self._manualMode = mode
-            self.manualModeChanged.emit()
-            qDebug("manualMode changed to " + str(mode))
-
-    manualMode = pyqtProperty(bool, fget=getManualMode, fset=setManualMode, notify=manualModeChanged)
-
-    @pyqtProperty(bool)
-    def active(self):
-        return self._active
-
-    @active.setter
-    def setActive(self, new_active):
-        if new_active != self._active:
-            self._active = new_active
-            self.activeChanged.emit()
-            if not self._active:
-                self.manualMode = False
-
-    @pyqtSlot(np.ndarray)
-    def receiveFrameData(self, frame):
-        if self.manualMode:
-            return
-        # TODO: implement auto-exposure here

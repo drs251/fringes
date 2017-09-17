@@ -232,7 +232,7 @@ ApplicationWindow {
                 //    y2 = temp
                 //}
 
-                frameGrabber.loader.setClipping(x1, y1, x2, y2, output.contentRect.width, output.contentRect.height)
+                frameGrabber.setClipping(x1, y1, x2, y2, output.contentRect.width, output.contentRect.height)
             }
         }
     }
@@ -262,8 +262,6 @@ ApplicationWindow {
 
     PluginDialog {
         id:pluginDialog
-
-        onSkipFramesChanged: frameGrabber.frameskip = skipFrames
     }
 
 
@@ -320,7 +318,7 @@ ApplicationWindow {
             clip_canvas.drawing = false
             clip_canvas.requestPaint()
 
-            pluginDialog.loader.setClipping(0, 0, 0, 0, 0, 0)
+            frameGrabber.setClipping(0, 0, 0, 0, 0, 0)
         }
     }
 

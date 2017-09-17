@@ -1,7 +1,7 @@
 import platform
 import numpy as np
 
-from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, qDebug, QRectF
+from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QMetaType, qDebug, QRect, QRectF
 from PyQt5.QtMultimedia import QVideoFrame, QAbstractVideoSurface, QCamera, QCameraViewfinderSettings, \
     QVideoSurfaceFormat, QAbstractVideoBuffer, QCameraInfo
 from PyQt5.QtGui import QImage

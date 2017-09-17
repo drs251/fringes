@@ -7,7 +7,6 @@ import Plugins 1.0
 
 Item {
 
-    property alias skipFrames: skipframesSpinbox.value
     property alias loader: pluginloader
 
     function open() {
@@ -85,18 +84,6 @@ Item {
                     }
                 }
             }
-
-            Row {
-                height:40
-                Label {
-                    text: "skip # of frames"
-                }
-                SpinBox {
-                    id: skipframesSpinbox
-                    value: frameGrabber.frameskip
-                }
-            }
         }
-
     }
 }
