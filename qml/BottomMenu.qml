@@ -82,6 +82,19 @@ Item {
                         onValueChanged: cameraSettings.gain = value
                     }
 
+                    Row {
+                        Text {
+                            width: 80
+                            text: "Saturation:"
+                        }
+                        ProgressBar {
+                            id: progress_bar
+                            width: 200
+                            minimumValue: 0
+                            maximumValue: 1
+                            value: cameraSettings.saturation
+                        }
+                    }
                 }
 
                 CheckBox {

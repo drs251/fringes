@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, qDebug, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, qDebug, pyqtSlot, QTimer
 import numpy as np
 
 
@@ -9,12 +9,16 @@ class CameraSettings(QObject):
     rangesChanged = pyqtSignal()
     manualModeChanged = pyqtSignal()
     activeChanged = pyqtSignal()
+    saturationChanged = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        # does the user currently control the exposure settings manually:
         self._manualMode = False
+        # is it possible to switch to manual mode with the current camera:
         self._active = False
         self._deviceSettings = None
+        self._saturation = 0
 
         # On windows, it should be possible to connect to the TIS camera
         # backend, which enables setting gain and exposure
@@ -24,6 +28,13 @@ class CameraSettings(QObject):
         try:
             import tis_cam.tis_settings as tis
             self._deviceSettings = tis.TisSettings()
+            self.active = True
+            self.manualMode = True
+
+            # setup a timer for auto saturation:
+            self.timer = QTimer()
+            self.timer.timeout.connect(self.autoSaturation)
+            self.timer.start(500)
         except ImportError as err:
             print("unable to load tis_settings module: " + str(err))
 
@@ -136,6 +147,37 @@ class CameraSettings(QObject):
 
     @pyqtSlot(np.ndarray)
     def receiveFrameData(self, frame):
-        if self.manualMode:
+        sat = frame.max() / 255
+        if sat != self._saturation:
+            self._saturation = sat
+            self.saturationChanged.emit()
+
+    def autoSaturation(self):
+        if self.manualMode or not self.active:
             return
-        # TODO: implement auto-exposure here
+
+        # TODO: improve and test this
+        min_saturation = 0.8
+        max_saturation = 0.95
+        target_saturation = (min_saturation + max_saturation) / 2
+        # how far is the current saturation away from the desired one:
+        increase_factor = target_saturation / self.saturation
+        if self._saturation < min_saturation:
+            if self.gain < self.maxGain:
+                db_increase = 10 * np.log(increase_factor)
+                self.gain = min(self.gain + db_increase, self.maxGain)
+            else:
+                if self.exposureTime < self.maxExposure:
+                    self.exposureTime = min(self.exposureTime * increase_factor, self.maxExposure)
+        elif self._saturation > min_saturation:
+            if self.gain > self.minGain:
+                db_increase = 10 * np.log(increase_factor)
+                self.gain = max(self.gain + db_increase, self.minGain)
+            else:
+                if self.exposureTime > self.minExposure:
+                    self.exposureTime = max(self.exposureTime * increase_factor, self.minExposure)
+
+    def getSaturation(self):
+        return self._saturation
+
+    saturation = pyqtProperty(float, fget=getSaturation, notify=saturationChanged)
