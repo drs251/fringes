@@ -22,65 +22,60 @@ Item {
         id: dialog
         title: "Manage plugins"
         standardButtons: StandardButton.Ok
-        height: 550
+        height: 500
+        width: 400
 
-        Column {
-            anchors.fill: parent
+        // The list containing the plugins
+        ListView {
+            height: parent.height - 50
+            anchors.left: parent.left
+            anchors.right: parent.right
 
-            // The list containing the plugins
-            ListView {
-                height: 400
+            model: pluginloader.plugins
+
+            // What each item should look like
+            delegate: Rectangle {
+                height: 60
                 width: parent.width
-                anchors.left: parent.left
-                anchors.right: parent.right
-                Layout.fillHeight: true
 
-                model: pluginloader.plugins
-
-                // What each item should look like
-                delegate: Rectangle {
-                    height: 60
-                    width: parent.width
-
-                    GridLayout {
-                        //anchors.verticalCenter: parent.verticalCenter
-                        columns: 2
-                        anchors.fill: parent
+                GridLayout {
+                    //anchors.verticalCenter: parent.verticalCenter
+                    columns: 2
+                    anchors.fill: parent
 
 
-                        CheckBox {
-                            width: 10
-                            height: 10
-                            Layout.rowSpan: 2
+                    CheckBox {
+                        width: 10
+                        height: 10
+                        Layout.rowSpan: 2
 
-                            id: pluginCheckbox
-                            checked: active
-                            onClicked: {
-                                pluginloader.activatePlugin(index, checked)
-                                if(checked) {
-                                    dialog.close()
-                                }
-                                // this restores the binding to the model, so that the checkbox state is updated:
-                                checked = Qt.binding(function() {
-                                    return active
-                                })
+                        id: pluginCheckbox
+                        checked: active
+                        onClicked: {
+                            pluginloader.activatePlugin(index, checked)
+                            if(checked) {
+                                dialog.close()
                             }
+                            // this restores the binding to the model, so that the checkbox state is updated:
+                            checked = Qt.binding(function() {
+                                return active
+                            })
                         }
+                    }
 
-                        Label {
-                            Layout.fillWidth: true
-                            id: nameLabel
-                            text: name
-                            font.bold: true
-                        }
+                    Label {
+                        Layout.fillWidth: true
+                        id: nameLabel
+                        text: name
+                        font.bold: true
+                    }
 
-                        Text {
-                            Layout.fillWidth: true
-                            id: descriptionLabel
-                            text: description
-                            wrapMode: Text.WordWrap
-                            Layout.bottomMargin: 30
-                        }
+                    Text {
+                        Layout.fillWidth: true
+                        id: descriptionLabel
+                        text: description
+                        wrapMode: Text.WordWrap
+                        Layout.bottomMargin: 30
                     }
                 }
             }

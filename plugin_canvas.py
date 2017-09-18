@@ -55,10 +55,10 @@ class PluginCanvas(QtWidgets.QDialog):
     def stay_on_top(self, stay):
         if stay:
             self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-            self.show()
+            # self.show()
         else:
             self.setWindowFlags(self._defaultFlags)
-            self.show()
+            # self.show()
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         """

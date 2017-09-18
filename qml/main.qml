@@ -14,6 +14,8 @@ ApplicationWindow {
     height: 540 //720
     title: "Fringes"
 
+    onClosing: Qt.quit()
+
     // Camera {
     //     id: camera
     // }
