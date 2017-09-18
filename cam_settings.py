@@ -4,8 +4,8 @@ import numpy as np
 
 class CameraSettings(QObject):
 
-    exposureTimeChanged = pyqtSignal(int)
-    gainChanged = pyqtSignal(int)
+    exposureTimeChanged = pyqtSignal(float)
+    gainChanged = pyqtSignal(float)
     rangesChanged = pyqtSignal()
     manualModeChanged = pyqtSignal()
     activeChanged = pyqtSignal()
@@ -64,8 +64,7 @@ class CameraSettings(QObject):
         except Exception as err:
             qDebug("Could not set exposure time. " + str(err))
 
-    @pyqtProperty(float, notify=gainChanged)
-    def gain(self):
+    def getGain(self):
         try:
             r_gain = self._deviceSettings.get_gain()
         except Exception as err:
@@ -73,14 +72,16 @@ class CameraSettings(QObject):
             r_gain = 0
         return r_gain
 
-    @gain.setter
-    def gain(self, newGain):
+    def setGain(self, newGain):
         try:
             if newGain != self._deviceSettings.get_gain:
                 self._deviceSettings.set_gain(newGain)
                 self.gainChanged.emit(newGain)
+                print("gain changed")
         except Exception as err:
             qDebug("Could not set gain. " + str(err))
+
+    gain = pyqtProperty(float, fget=getGain, fset=setGain, notify=gainChanged)
 
     @pyqtProperty(float, notify=rangesChanged)
     def minGain(self):
@@ -102,7 +103,8 @@ class CameraSettings(QObject):
     def minExposure(self):
         try:
             rng = self._deviceSettings.get_exposure_range()
-            return rng[0]
+            # avoid exposure times below 5 ms
+            return max(rng[0], 5)
         except Exception as err:
             qDebug("Could not get minExposure. " + str(err))
             return 1
@@ -129,7 +131,6 @@ class CameraSettings(QObject):
         if mode != self._manualMode:
             self._manualMode = mode
             self.manualModeChanged.emit()
-            qDebug("manualMode changed to " + str(mode))
 
     manualMode = pyqtProperty(bool, fget=getManualMode, fset=setManualMode, notify=manualModeChanged)
 
@@ -176,6 +177,8 @@ class CameraSettings(QObject):
             else:
                 if self.exposureTime > self.minExposure:
                     self.exposureTime = max(self.exposureTime * increase_factor, self.minExposure)
+        print("gain:", self.gain)
+        print("exposure", self.exposureTime)
 
     def getSaturation(self):
         return self._saturation

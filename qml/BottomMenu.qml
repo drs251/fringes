@@ -59,7 +59,7 @@ Item {
 
                     BoxSlider {
                         id: exposure_slider
-                        enabled: cameraSettings.manualMode
+                        //enabled: cameraSettings.manualMode
                         width: 500
                         height: 50
                         text: "Exposure time (ms)"
@@ -71,7 +71,7 @@ Item {
 
                     BoxSlider {
                         id: gain_slider
-                        enabled: cameraSettings.manualMode
+                        //enabled: cameraSettings.manualMode
                         width: 500
                         height: 50
                         text: "Gain (dB)"
