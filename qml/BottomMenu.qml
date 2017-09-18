@@ -1,7 +1,6 @@
 import QtQuick 2.5
 import QtQuick.Controls 1.4
-//import QtQuick.Layouts 1.3
-//import Qt.labs.settings 1.0
+import QtQuick.Controls.Styles 1.4
 
 Item {
     id: bottomMenu
@@ -93,6 +92,18 @@ Item {
                             minimumValue: 0
                             maximumValue: 1
                             value: cameraSettings.saturation
+                            style: ProgressBarStyle {
+                                background: Rectangle {
+                                    radius: 10
+                                    color: "gray"
+                                    implicitWidth: 200
+                                    implicitHeight: 10
+                                }
+                                progress: Rectangle {
+                                    color: "blue"
+                                    radius: 10
+                                }
+                            }
                         }
                     }
                 }

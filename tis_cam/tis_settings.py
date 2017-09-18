@@ -13,7 +13,7 @@ def _ensure_valid(func):
     return wrapper
 
 
-class TisSettings():
+class TisSettings:
 
     # to convert the values from TIS into nice units:
     _gain_factor = 10
@@ -38,9 +38,9 @@ class TisSettings():
                 self._manualMode = True
 
     def setSourceFromDeviceId(self, devId):
-        qDebug("setSourceFromDeviceId: " + devId)
+        # qDebug("setSourceFromDeviceId: " + devId)
         # TODO: implement this!
-
+        pass
 
     def _clear_interface(self):
         if self._control.DeviceValid:
@@ -77,9 +77,8 @@ class TisSettings():
     @_ensure_valid
     def get_exposure_range(self):
         rng = self._control.ExposureRange
-        for i in len(rng):
-            rng[i] /= self._exposure_factor
-        return rng
+        scaled_rng = [bound / self._exposure_factor for bound in rng]
+        return scaled_rng
 
     @_ensure_valid
     def is_auto_exposure(self):
@@ -104,9 +103,8 @@ class TisSettings():
     @_ensure_valid
     def get_gain_range(self):
         rng = self._control.GainRange
-        for i in len(rng):
-            rng[i] /= self._gain_factor
-        return rng
+        scaled_rng = [bound / self._exposure_factor for bound in rng]
+        return scaled_rng
 
     @_ensure_valid
     def set_exposure(self, exposure):

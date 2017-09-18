@@ -41,6 +41,7 @@ Item {
 
         SpinBox {
             id: spinbox
+            width: 40
             Layout.alignment: Layout.Left
             decimals: 1
             onValueChanged: {

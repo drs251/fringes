@@ -77,7 +77,7 @@ class CameraSettings(QObject):
     def gain(self, newGain):
         try:
             if newGain != self._deviceSettings.get_gain:
-                self._set_gain(newGain)
+                self._deviceSettings.set_gain(newGain)
                 self.gainChanged.emit(newGain)
         except Exception as err:
             qDebug("Could not set gain. " + str(err))
@@ -102,7 +102,7 @@ class CameraSettings(QObject):
     def minExposure(self):
         try:
             rng = self._deviceSettings.get_exposure_range()
-            return rng[0] / self._exposure_factor
+            return rng[0]
         except Exception as err:
             qDebug("Could not get minExposure. " + str(err))
             return 1
@@ -112,7 +112,7 @@ class CameraSettings(QObject):
         try:
             rng = self._deviceSettings.get_exposure_range()
             # avoid exposure times greater than one second:
-            return min(rng[1] / self._exposure_factor, 1000)
+            return min(rng[1], 1000)
         except Exception as err:
             qDebug("Could not get maxExposure. " + str(err))
             return 3

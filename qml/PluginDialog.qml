@@ -27,9 +27,14 @@ Item {
 
         // The list containing the plugins
         ListView {
-            height: parent.height - 50
+            //anchors.fill: parent
+            height: 450
             anchors.left: parent.left
             anchors.right: parent.right
+            spacing: 5
+            //width: parent.width
+            //height: 400
+            //width: 400
 
             model: pluginloader.plugins
 
@@ -48,6 +53,8 @@ Item {
                         width: 10
                         height: 10
                         Layout.rowSpan: 2
+                        Layout.margins: 3
+                        Layout.alignment: Qt.AlignTop
 
                         id: pluginCheckbox
                         checked: active
