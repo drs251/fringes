@@ -2,6 +2,10 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, qDebug, pyqtSlot, QT
 import numpy as np
 
 
+def clamp(x, minn, maxx):
+    return min(max(x, minn), maxx)
+
+
 class CameraSettings(QObject):
 
     exposureTimeChanged = pyqtSignal()
@@ -25,6 +29,9 @@ class CameraSettings(QObject):
         self._maxGain = 1
         self._minExposureTime = 1
         self._maxExposureTime = 3
+        self._autoSaturationInterval = 250
+        self._piUi = 0
+        self._piE = 0
 
         # On windows, it should be possible to connect to the TIS camera
         # backend, which enables setting gain and exposure
@@ -43,7 +50,7 @@ class CameraSettings(QObject):
             # setup a timer for auto saturation:
             self.timer = QTimer()
             self.timer.timeout.connect(self.autoSaturation)
-            self.timer.start(500)
+            self.timer.start(self._autoSaturationInterval)
         except Exception as err:
             print("unable to load tis_settings module: " + str(err))
 
@@ -164,8 +171,6 @@ class CameraSettings(QObject):
         self._lastSaturations.append(sat)
         if len(self._lastSaturations) > 10:
             self._lastSaturations.pop(0)
-        #self._saturation = sum(self._lastSaturations) / len(self._lastSaturations)
-        # use a weighted sum, so the last saturations count more:
         weight = np.arange(1, len(self._lastSaturations) + 1)
         self._saturation = np.sum(weight * np.array(self._lastSaturations)) / np.sum(weight)
         self.saturationChanged.emit()
@@ -174,26 +179,31 @@ class CameraSettings(QObject):
         if self.manualMode or not self.active:
             return
 
-        # TODO: improve and test this
-        min_saturation = 0.8
-        max_saturation = 0.95
-        target_saturation = (min_saturation + max_saturation) / 2
-        # how far is the current saturation away from the desired one:
-        increase_factor = target_saturation / self.saturation
-        if self._saturation < min_saturation:
-            if self.gain < self.maxGain:
-                db_increase = 10 * np.log(increase_factor)
-                self.gain = min(self.gain + db_increase, self.maxGain)
-            else:
-                if self.exposureTime < self.maxExposure:
-                    self.exposureTime = min(self.exposureTime * increase_factor, self.maxExposure)
-        elif self._saturation > min_saturation:
-            if self.gain > self.minGain:
-                db_increase = 10 * np.log(increase_factor)
-                self.gain = max(self.gain + db_increase, self.minGain)
-            else:
-                if self.exposureTime > self.minExposure:
-                    self.exposureTime = max(self.exposureTime * increase_factor, self.minExposure)
+        # a simple PI controller:
+        setpoint = 0.5
+        Kp = 25
+        Ti = 0.3
+
+        error = self._saturation - setpoint
+        print("error:", error)
+        ui = self._piUi + error * self._autoSaturationInterval / 1000 * Ti
+        self._piUi = ui
+        output = - Kp * (error + ui)
+
+        # should the gain or exposure time be adjusted?
+        if False:
+        #if (error > 0 and self.minGain < self.gain) or (error < 0 and self.gain < self.maxGain):
+            # adjust gain
+            ex = self.exposureTime
+            db_increase = 10 * np.log((ex + error) / ex)
+            print("db increase:", db_increase)
+            self.gain = clamp(self.gain + db_increase, self.minGain, self.maxGain)
+        elif (error > 0 and self.minExposure < self.exposureTime) or\
+                (error < 0 and self.exposureTime < self.maxExposure):
+            self.exposureTime = clamp(self.exposureTime + output, self.minExposure, self.maxExposure)
+        else:
+            # stuck at the edge...
+            self._piUi = 0
 
     def getSaturation(self):
         return self._saturation
