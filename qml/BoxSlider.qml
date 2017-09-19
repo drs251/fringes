@@ -5,7 +5,7 @@ import QtQuick.Controls.Styles 1.4
 
 Item {
     id: root
-    property var value: 0
+    property var val: 0
     property alias from: slider.minimumValue
     property alias to: slider.maximumValue
     property alias text: label.text
@@ -16,7 +16,7 @@ Item {
         Slider {
             id: slider
             width: 800
-            value: root.value
+            value: root.val
             style: SliderStyle {
                 groove: Rectangle {
                     implicitWidth: 300
@@ -30,27 +30,28 @@ Item {
                     //}
                 }
             }
-            onValueChanged: {
-                spinbox.value = value
-            }
             onMinimumValueChanged: {
                 spinbox.minimumValue = minimumValue
             }
             onMaximumValueChanged: {
-                if (value != root.value)
-                    root.value = value
+                spinbox.maximumValue = maximumValue
+            }
+            onValueChanged: {
+                if  (value != root.val)
+                    root.val = value
             }
         }
 
         SpinBox {
             id: spinbox
+            value: root.val
             width: 40
             Layout.alignment: Layout.Left
             decimals: 1
             onValueChanged: {
                 var stp = Math.pow(10, -decimals)
-                if (value >= root.value + stp || value <= root.value - stp)
-                    root.value = value
+                if (value >= root.val + stp || value <= root.val - stp)
+                    root.val = value
             }
         }
 

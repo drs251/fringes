@@ -297,16 +297,6 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.right: parent.right
 
-        onExposure_timeChanged: {
-        }
-
-        onAuto_exposureChanged: {
-            if(auto_exposure) {
-            }
-            else {
-            }
-        }
-
         onClearDraw: canvas.clear()
 
         onResetZoom: {

@@ -4,8 +4,8 @@ import numpy as np
 
 class CameraSettings(QObject):
 
-    exposureTimeChanged = pyqtSignal(float)
-    gainChanged = pyqtSignal(float)
+    exposureTimeChanged = pyqtSignal()
+    gainChanged = pyqtSignal()
     rangesChanged = pyqtSignal()
     manualModeChanged = pyqtSignal()
     activeChanged = pyqtSignal()
@@ -19,8 +19,8 @@ class CameraSettings(QObject):
         self._active = False
         self._deviceSettings = None
         self._saturation = 0
-        self._gain = 0
-        self._exposureTime = 1
+        self._gain = -1
+        self._exposureTime = -1
         self._minGain = 0
         self._maxGain = 1
         self._minExposureTime = 1
@@ -59,16 +59,19 @@ class CameraSettings(QObject):
             self._exposureTime = self._deviceSettings.get_exposure()
         except Exception as err:
             qDebug("Could not get exposure time. " + str(err))
+        print("getExposureTime", self._exposureTime)
         return self._exposureTime
 
     def setExposureTime(self, newTime):
-        try:
-            if newTime != self._exposureTime:
-                self._exposureTime = newTime
+        print("CamSettings: setExposureTime", newTime)
+        if newTime != self._exposureTime:
+            self._exposureTime = newTime
+            self.exposureTimeChanged.emit()
+            print("CamSettings: exposure time", self._exposureTime)
+            try:
                 self._deviceSettings.set_exposure(newTime)
-                self.exposureTimeChanged.emit(newTime)
-        except Exception as err:
-            qDebug("Could not set exposure time. " + str(err))
+            except Exception as err:
+                qDebug("Could not set exposure time. " + str(err))
 
     exposureTime = pyqtProperty(float, fget=getExposureTime, fset=setExposureTime, notify=exposureTimeChanged)
 
@@ -83,8 +86,8 @@ class CameraSettings(QObject):
         try:
             if newGain != self._gain:
                 self._gain = newGain
+                self.gainChanged.emit()
                 self._deviceSettings.set_gain(newGain)
-                self.gainChanged.emit(newGain)
                 print("gain changed")
         except Exception as err:
             qDebug("Could not set gain. " + str(err))

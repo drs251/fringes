@@ -14,9 +14,6 @@ Item {
     property alias enableDraw: draw_button.checked
     property alias enableZoom: zoom_button.checked
     property alias enableClipping: clip_button.checked
-    property alias exposure_time: exposure_slider.value
-    property alias gain: gain_slider.value
-    property alias auto_exposure: auto_checkbox.checked
 
     signal resetZoom()
     signal clearDraw()
@@ -65,14 +62,16 @@ Item {
                         text: "Exposure time (ms)"
                         from: cameraSettings.minExposure
                         to: cameraSettings.maxExposure
-                        value: cameraSettings.exposureTime
-                        onValueChanged: console.log("gain slider: ", value)
-                        //onValueChanged: {
-                        //    cameraSettings.exposureTime = value
-                        //    value = Qt.binding(function() {
-                        //        return cameraSettings.exposureTime
-                        //    })
-                        //}
+                        val: cameraSettings.exposureTime
+                        onValChanged: {
+                            console.log("exposure slider: ", val)
+                            if (val != cameraSettings.exposureTime) {
+                                cameraSettings.exposureTime = val
+                                val = Qt.binding(function() {
+                                    return cameraSettings.exposureTime
+                                })
+                            }
+                        }
                     }
 
                     BoxSlider {
@@ -83,7 +82,7 @@ Item {
                         text: "Gain (dB)"
                         from: cameraSettings.minGain
                         to: cameraSettings.maxGain
-                        value: cameraSettings.gain
+                        val: cameraSettings.gain
                         //onValueChanged: {
                         //    cameraSettings.gain = value
                          //   value = Qt.binding(function() {
