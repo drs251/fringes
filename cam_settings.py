@@ -38,6 +38,7 @@ class CameraSettings(QObject):
             self.getGain()
             self.active = True
             self.manualMode = True
+            self._lastSaturations = []
 
             # setup a timer for auto saturation:
             self.timer = QTimer()
@@ -160,9 +161,14 @@ class CameraSettings(QObject):
     @pyqtSlot(np.ndarray)
     def receiveFrameData(self, frame):
         sat = frame.max() / 255
-        if sat != self._saturation:
-            self._saturation = sat
-            self.saturationChanged.emit()
+        self._lastSaturations.append(sat)
+        if len(self._lastSaturations) > 10:
+            self._lastSaturations.pop(0)
+        #self._saturation = sum(self._lastSaturations) / len(self._lastSaturations)
+        # use a weighted sum, so the last saturations count more:
+        weight = np.arange(1, len(self._lastSaturations) + 1)
+        self._saturation = np.sum(weight * np.array(self._lastSaturations)) / np.sum(weight)
+        self.saturationChanged.emit()
 
     def autoSaturation(self):
         if self.manualMode or not self.active:
@@ -188,8 +194,6 @@ class CameraSettings(QObject):
             else:
                 if self.exposureTime > self.minExposure:
                     self.exposureTime = max(self.exposureTime * increase_factor, self.minExposure)
-        print("gain:", self.gain)
-        print("exposure", self.exposureTime)
 
     def getSaturation(self):
         return self._saturation
