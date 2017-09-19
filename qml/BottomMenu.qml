@@ -56,7 +56,7 @@ Item {
 
                     BoxSlider {
                         id: exposure_slider
-                        //enabled: cameraSettings.manualMode
+                        enabled: cameraSettings.manualMode
                         width: 500
                         height: 50
                         text: "Exposure time (ms)"
@@ -64,7 +64,6 @@ Item {
                         to: cameraSettings.maxExposure
                         val: cameraSettings.exposureTime
                         onValChanged: {
-                            console.log("exposure slider: ", val)
                             if (val != cameraSettings.exposureTime) {
                                 cameraSettings.exposureTime = val
                                 val = Qt.binding(function() {
@@ -76,19 +75,21 @@ Item {
 
                     BoxSlider {
                         id: gain_slider
-                        //enabled: cameraSettings.manualMode
+                        enabled: cameraSettings.manualMode
                         width: 500
                         height: 50
                         text: "Gain (dB)"
                         from: cameraSettings.minGain
                         to: cameraSettings.maxGain
                         val: cameraSettings.gain
-                        //onValueChanged: {
-                        //    cameraSettings.gain = value
-                         //   value = Qt.binding(function() {
-                        //        return cameraSettings.gain
-                        //    })
-                        //}
+                        onValChanged: {
+                            if (val != cameraSettings.gain) {
+                                cameraSettings.gain = val
+                                val = Qt.binding(function() {
+                                    return cameraSettings.gain
+                                })
+                            }
+                        }
                     }
 
                     Row {

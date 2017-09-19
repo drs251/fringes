@@ -59,15 +59,12 @@ class CameraSettings(QObject):
             self._exposureTime = self._deviceSettings.get_exposure()
         except Exception as err:
             qDebug("Could not get exposure time. " + str(err))
-        print("getExposureTime", self._exposureTime)
         return self._exposureTime
 
     def setExposureTime(self, newTime):
-        print("CamSettings: setExposureTime", newTime)
         if newTime != self._exposureTime:
             self._exposureTime = newTime
             self.exposureTimeChanged.emit()
-            print("CamSettings: exposure time", self._exposureTime)
             try:
                 self._deviceSettings.set_exposure(newTime)
             except Exception as err:
@@ -88,7 +85,6 @@ class CameraSettings(QObject):
                 self._gain = newGain
                 self.gainChanged.emit()
                 self._deviceSettings.set_gain(newGain)
-                print("gain changed")
         except Exception as err:
             qDebug("Could not set gain. " + str(err))
 

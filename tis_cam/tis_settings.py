@@ -1,14 +1,12 @@
 import win32com.client as com
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, qDebug, pyqtSlot
-import numpy as np
+from PyQt5.QtCore import qDebug
 
-x = 1 / 0
 
 # a decorator for easy checking that the device is valid
 # before a function is run
 def _ensure_valid(func):
     def wrapper(self, *args, **kwargs):
-        if not self._valid:
+        if not self._valid():
             raise RuntimeError("Operation on invalid device!")
         return func(self, *args, **kwargs)
     return wrapper
