@@ -180,23 +180,18 @@ class CameraSettings(QObject):
             return
 
         # a simple PI controller:
-        setpoint = 0.5
+        setpoint = 0.85
         Kp = 25
         Ti = 0.3
 
         error = self._saturation - setpoint
-        print("error:", error)
         ui = self._piUi + error * self._autoSaturationInterval / 1000 * Ti
         self._piUi = ui
         output = - Kp * (error + ui)
 
-        # should the gain or exposure time be adjusted?
-        if False:
-        #if (error > 0 and self.minGain < self.gain) or (error < 0 and self.gain < self.maxGain):
+        if (error > 0 and self.minGain < self.gain) or (error < 0 and self.gain < self.maxGain):
             # adjust gain
-            ex = self.exposureTime
-            db_increase = 10 * np.log((ex + error) / ex)
-            print("db increase:", db_increase)
+            db_increase = output / 5
             self.gain = clamp(self.gain + db_increase, self.minGain, self.maxGain)
         elif (error > 0 and self.minExposure < self.exposureTime) or\
                 (error < 0 and self.exposureTime < self.maxExposure):
