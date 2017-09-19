@@ -2,6 +2,7 @@ import win32com.client as com
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, qDebug, pyqtSlot
 import numpy as np
 
+x = 1 / 0
 
 # a decorator for easy checking that the device is valid
 # before a function is run

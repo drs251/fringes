@@ -19,6 +19,12 @@ class CameraSettings(QObject):
         self._active = False
         self._deviceSettings = None
         self._saturation = 0
+        self._gain = 0
+        self._exposureTime = 1
+        self._minGain = 0
+        self._maxGain = 1
+        self._minExposureTime = 1
+        self._maxExposureTime = 3
 
         # On windows, it should be possible to connect to the TIS camera
         # backend, which enables setting gain and exposure
@@ -28,6 +34,8 @@ class CameraSettings(QObject):
         try:
             import tis_cam.tis_settings as tis
             self._deviceSettings = tis.TisSettings()
+            self.getExposureTime()
+            self.getGain()
             self.active = True
             self.manualMode = True
 
@@ -35,7 +43,7 @@ class CameraSettings(QObject):
             self.timer = QTimer()
             self.timer.timeout.connect(self.autoSaturation)
             self.timer.start(500)
-        except ImportError as err:
+        except Exception as err:
             print("unable to load tis_settings module: " + str(err))
 
 
@@ -46,35 +54,35 @@ class CameraSettings(QObject):
         except Exception as err:
             qDebug("Could not set source settings. " + str(err))
 
-    @pyqtProperty(float, notify=exposureTimeChanged)
-    def exposureTime(self):
+    def getExposureTime(self):
         try:
-            r_time = self._deviceSettings.get_exposure()
+            self._exposureTime = self._deviceSettings.get_exposure()
         except Exception as err:
             qDebug("Could not get exposure time. " + str(err))
-            r_time = 1
-        return r_time
+        return self._exposureTime
 
-    @exposureTime.setter
-    def exposureTime(self, newTime):
+    def setExposureTime(self, newTime):
         try:
-            if newTime != self._deviceSettings.get_exposure:
+            if newTime != self._exposureTime:
+                self._exposureTime = newTime
                 self._deviceSettings.set_exposure(newTime)
                 self.exposureTimeChanged.emit(newTime)
         except Exception as err:
             qDebug("Could not set exposure time. " + str(err))
 
+    exposureTime = pyqtProperty(float, fget=getExposureTime, fset=setExposureTime, notify=exposureTimeChanged)
+
     def getGain(self):
         try:
-            r_gain = self._deviceSettings.get_gain()
+            self._gain = self._deviceSettings.get_gain()
         except Exception as err:
             qDebug("Could not get gain. " + str(err))
-            r_gain = 0
-        return r_gain
+        return self._gain
 
     def setGain(self, newGain):
         try:
-            if newGain != self._deviceSettings.get_gain:
+            if newGain != self._gain:
+                self._gain = newGain
                 self._deviceSettings.set_gain(newGain)
                 self.gainChanged.emit(newGain)
                 print("gain changed")
@@ -83,41 +91,45 @@ class CameraSettings(QObject):
 
     gain = pyqtProperty(float, fget=getGain, fset=setGain, notify=gainChanged)
 
-    @pyqtProperty(float, notify=rangesChanged)
-    def minGain(self):
+    def getMinGain(self):
         try:
-            return self._deviceSettings.get_gain_range()[0]
+            self._minGain = self._deviceSettings.get_gain_range()[0]
         except Exception as err:
             qDebug("Could not get minGain. " + str(err))
-            return 0
+        return self._minGain
 
-    @pyqtProperty(float, notify=rangesChanged)
-    def maxGain(self):
+    minGain = pyqtProperty(float, fget=getMinGain, notify=rangesChanged)
+
+    def getMaxGain(self):
         try:
-            return self._deviceSettings.get_gain_range()[1]
+            self._maxGain = self._deviceSettings.get_gain_range()[1]
         except Exception as err:
             qDebug("Could not get maxGain. " + str(err))
-            return 2
+        return self._maxGain
 
-    @pyqtProperty(float, notify=rangesChanged)
-    def minExposure(self):
+    maxGain = pyqtProperty(float, fget=getMaxGain, notify=rangesChanged)
+
+    def getMinExposure(self):
         try:
             rng = self._deviceSettings.get_exposure_range()
             # avoid exposure times below 5 ms
-            return max(rng[0], 5)
+            self._minExposureTime = max(rng[0], 5)
         except Exception as err:
             qDebug("Could not get minExposure. " + str(err))
-            return 1
+        return self._minExposureTime
 
-    @pyqtProperty(float, notify=rangesChanged)
-    def maxExposure(self):
+    minExposure = pyqtProperty(float, fget=getMinExposure, notify=rangesChanged)
+
+    def getMaxExposure(self):
         try:
             rng = self._deviceSettings.get_exposure_range()
             # avoid exposure times greater than one second:
-            return min(rng[1], 1000)
+            self._maxExposureTime = min(rng[1], 1000)
         except Exception as err:
             qDebug("Could not get maxExposure. " + str(err))
-            return 3
+        return self._maxExposureTime
+
+    maxExposure = pyqtProperty(float, fget=getMaxExposure, notify=rangesChanged)
 
     @pyqtSlot()
     def updateValues(self):

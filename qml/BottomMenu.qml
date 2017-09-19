@@ -66,7 +66,13 @@ Item {
                         from: cameraSettings.minExposure
                         to: cameraSettings.maxExposure
                         value: cameraSettings.exposureTime
-                        onValueChanged: cameraSettings.exposureTime = value
+                        onValueChanged: console.log("gain slider: ", value)
+                        //onValueChanged: {
+                        //    cameraSettings.exposureTime = value
+                        //    value = Qt.binding(function() {
+                        //        return cameraSettings.exposureTime
+                        //    })
+                        //}
                     }
 
                     BoxSlider {
@@ -78,7 +84,12 @@ Item {
                         from: cameraSettings.minGain
                         to: cameraSettings.maxGain
                         value: cameraSettings.gain
-                        onValueChanged: cameraSettings.gain = value
+                        //onValueChanged: {
+                        //    cameraSettings.gain = value
+                         //   value = Qt.binding(function() {
+                        //        return cameraSettings.gain
+                        //    })
+                        //}
                     }
 
                     Row {
