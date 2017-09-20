@@ -32,6 +32,7 @@ class CameraSettings(QObject):
         self._autoSaturationInterval = 250
         self._piUi = 0
         self._piE = 0
+        self._lastSaturations = []
 
         # On windows, it should be possible to connect to the TIS camera
         # backend, which enables setting gain and exposure
@@ -45,7 +46,6 @@ class CameraSettings(QObject):
             self.getGain()
             self.active = True
             self.manualMode = True
-            self._lastSaturations = []
 
             # setup a timer for auto saturation:
             self.timer = QTimer()
