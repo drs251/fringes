@@ -1,11 +1,13 @@
-import os, importlib, traceback, sys
+import importlib
+import os
+import sys
+import traceback
 from enum import Enum
-import numpy as np
 
+import numpy as np
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QAbstractListModel, Qt, QModelIndex, \
     QVariant, QSize, QRectF
-from PyQt5.QtQml import qmlRegisterType, QQmlListProperty
-from PyQt5.QtGui import QImage
+from PyQt5.QtQml import qmlRegisterType
 
 from plugin import Plugin
 

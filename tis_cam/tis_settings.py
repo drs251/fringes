@@ -24,10 +24,6 @@ class TisSettings:
         self._active = False
 
         devices = self._get_available_devices()
-        # TODO: make sure that one can choose an arbitrary camera
-        #qDebug("Available TIS devices:")
-        #for dev in devices:
-        #    qDebug(self._get_unique_name(dev))
         if len(devices) > 0:
             self._control.DeviceUniqueName = self._get_unique_name(devices[0])
             if not self._valid:
@@ -37,8 +33,6 @@ class TisSettings:
                 self._manualMode = True
 
     def setSourceFromDeviceId(self, devId):
-        # qDebug("setSourceFromDeviceId: " + devId)
-        # TODO: implement this!
         pass
 
     def _clear_interface(self):

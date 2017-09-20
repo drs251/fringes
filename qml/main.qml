@@ -16,17 +16,12 @@ ApplicationWindow {
 
     onClosing: Qt.quit()
 
-    // Camera {
-    //     id: camera
-    // }
-
     // This shows the original video from the camera
     VideoOutput {
         id: output
         objectName: "output"
         source: frameGrabber
         anchors.fill: parent
-        //fillMode: VideoOutput.PreserveAspectCrop
         focus: visible // to receive focus and capture key events when visible
 
         transform: [
@@ -121,8 +116,6 @@ ApplicationWindow {
                 zoomScale.origin.y = zoom_canvas.centerY
                 zoomScale.xScale = zoom_canvas.zoom_scale
                 zoomScale.yScale = zoom_canvas.zoom_scale
-                //zoomTranslate.x = zoom_canvas.centerX
-                //zoomTranslate.y = zoom_canvas.centerY
             }
         }
     }
@@ -223,17 +216,6 @@ ApplicationWindow {
                 var y1 = clip_canvas.startY
                 var y2 = clip_canvas.lastY
 
-                //if(x1 > x2) {
-                //    var temp = x1
-                //    x1 = x2
-                //    x2 = temp
-                // }
-                //if(y1 > y2) {
-                //    var temp = y1
-                //    y1 = y2
-                //    y2 = temp
-                //}
-
                 frameGrabber.setClipping(x1, y1, x2, y2, output.contentRect.width, output.contentRect.height)
             }
         }
@@ -265,7 +247,6 @@ ApplicationWindow {
     PluginDialog {
         id:pluginDialog
     }
-
 
 
     TopMenu {

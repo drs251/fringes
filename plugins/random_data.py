@@ -20,7 +20,6 @@ class MyPlugin(QObject):
 
             self.parent.ax.cla()
 
-            # print("dummy1 process frame")
             # random data
             data = [random.random() for _ in range(10)]
 

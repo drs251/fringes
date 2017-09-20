@@ -2,12 +2,11 @@ import datetime
 import os
 import queue
 import re
-import sys
 import time
 
 import numpy as np
 from PyQt5.QtCore import QThread, QObject, pyqtSignal, QMutex, QWaitCondition, QDir, QTimer
-from PyQt5.QtWidgets import QHBoxLayout, QGroupBox, QSpinBox, QLabel, QPushButton, QFileDialog, QMessageBox, \
+from PyQt5.QtWidgets import QHBoxLayout, QGroupBox, QLabel, QPushButton, QFileDialog, QMessageBox, \
     QDoubleSpinBox
 from scipy.misc import imsave
 

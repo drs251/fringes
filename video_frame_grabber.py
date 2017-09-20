@@ -49,18 +49,15 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._surface = surface
         self.videoSurfaceChanged.emit(self._surface)
         if self._surface is not None:
-            # self._supportedPixelFormats = self._surface.supportedPixelFormats()
             self._nativeResolution = self._surface.nativeResolution()
 
     # method for QAbstractVideoSurface
     def supportedPixelFormats(self, handleType=QAbstractVideoBuffer.NoHandle):
         return self._supportedPixelFormats
-        # return self._surface.supportedPixelFormats(handleType)
 
     # method for QAbstractVideoSurface
     def isFormatSupported(self, fmt: QVideoSurfaceFormat):
         return fmt in self._supportedPixelFormats
-        # return self._surface.isFormatSupported(fmt)
 
     def surfaceFormat(self):
         return self._surface.surfaceFormat()
@@ -82,7 +79,6 @@ class VideoFrameGrabber(QAbstractVideoSurface):
 
         # convert QVideoFrame to QImage first (this is convenient for clipping)
         pixel_format = frame.pixelFormat()
-        # print("frame arrived with pixel format", pixel_format)
         image_format = QVideoFrame.imageFormatFromPixelFormat(pixel_format)
         if image_format == QImage.Format_Invalid:
             qDebug("WARNING: Could not convert video frame to image!")

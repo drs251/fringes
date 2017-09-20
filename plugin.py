@@ -1,8 +1,9 @@
-from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QRectF
-from PyQt5.QtQml import qmlRegisterType
-from PyQt5.QtGui import QImage
+import sys
+import traceback
+
 import numpy as np
-import traceback, sys
+from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
+from PyQt5.QtQml import qmlRegisterType
 
 
 class Plugin(QObject):

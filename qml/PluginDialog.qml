@@ -27,14 +27,10 @@ Item {
 
         // The list containing the plugins
         ListView {
-            //anchors.fill: parent
             height: 450
             anchors.left: parent.left
             anchors.right: parent.right
             spacing: 5
-            //width: parent.width
-            //height: 400
-            //width: 400
 
             model: pluginloader.plugins
 
@@ -44,7 +40,6 @@ Item {
                 width: parent.width
 
                 GridLayout {
-                    //anchors.verticalCenter: parent.verticalCenter
                     columns: 2
                     anchors.fill: parent
 

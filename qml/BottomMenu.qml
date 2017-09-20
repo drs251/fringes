@@ -49,8 +49,6 @@ Item {
                 anchors.margins: 20
                 spacing: 20
                 Column {
-                    //anchors.fill: parent
-
                     spacing: 6
                     anchors.margins: 6
 
@@ -165,7 +163,6 @@ Item {
                         text: "Zoom"
                         checkable: true
                         onCheckedChanged: {
-                            //canvas_mouse_area.enabled = checked
                             if(checked) draw_button.checked = false
                         }
                     }

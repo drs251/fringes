@@ -23,11 +23,6 @@ Item {
                     implicitHeight: 5
                     color: "gray"
                     radius: 5
-                    //Rectangle {
-                    //    implicitHeight: 5
-                    //    color: "blue"
-                    //    implicitWidth: control.value * control.width
-                    //}
                 }
             }
             onMinimumValueChanged: {
