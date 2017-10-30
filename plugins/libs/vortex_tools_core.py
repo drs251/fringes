@@ -17,6 +17,7 @@ def fourier_transform(image, transform_size=200):
     transform = fftpack.fftshift(transform)
 
     if transform_size != 0:
+        transform_size = min(tuple([transform_size]) + transform.shape)
         transform_size = int(transform_size / 2)
         cx = int((transform.shape[0] + 1) / 2)
         cy = int((transform.shape[1] + 1) / 2)
