@@ -97,6 +97,10 @@ class VideoFrameGrabber(QAbstractVideoSurface):
 
         frame.unmap()
 
+        # fix upside-down data for windows
+        if platform.system() == "Windows":
+            image = image.mirrored(vertical=True)
+
         if self._clipSize != QRectF():
             # scale according to rectangle selected in main window:
             orig_size = image.rect()
