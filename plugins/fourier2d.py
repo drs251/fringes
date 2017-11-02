@@ -30,6 +30,7 @@ class FFTWorker(QThread):
     phase = pyqtSignal(np.ndarray)
     circle = pyqtSignal(tuple, int, 'QString')
     clearCircles = pyqtSignal()
+    blob_position = pyqtSignal(int, int, float)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -66,6 +67,10 @@ class FFTWorker(QThread):
             threshold = parameters['threshold']
             method = parameters['method']
             auto = parameters['auto']
+            blob_x = parameters['blob_x']
+            blob_y = parameters['blob_y']
+            blob_r = parameters['blob_r']
+            auto_blob = parameters['auto_blob']
 
             # convert frame to grayscale and rotate to give the correction orientation
             data = frame.sum(axis=2).astype(np.float64)
@@ -80,35 +85,49 @@ class FFTWorker(QThread):
             transform, transform_abs = vtc.fourier_transform(data, 300)
             transform_abs = np.nan_to_num(np.log(transform_abs))
 
-            if auto:
-                blobs = vtc.find_3_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
-                                         overlap=overlap, threshold=threshold, method=method)
-            else:
-                blobs = vtc.find_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
-                                       overlap=overlap, threshold=threshold, method=method)
-            found_3_blobs = blobs.shape[0] == 3
+            if auto_blob:
 
-            if found_3_blobs:
-                # success! get the main blob and do a reverse transform
-                main_blob = vtc.pick_blob(blobs)
+                if auto:   # automatic threshold finding
+                    blobs = vtc.find_3_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
+                                             overlap=overlap, threshold=threshold, method=method)
+                else:
+                    blobs = vtc.find_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
+                                           overlap=overlap, threshold=threshold, method=method)
+                found_3_blobs = blobs.shape[0] == 3
+
+                if found_3_blobs:
+                    # success! get the main blob and do a reverse transform
+                    main_blob = vtc.pick_blob(blobs)
+                    shifted_transform = vtc.mask_and_shift(transform, main_blob[0], main_blob[1], main_blob[2])
+                    backtransform, backtransform_abs, backtransform_phase = vtc.inv_fourier_transform(shifted_transform)
+                else:
+                    backtransform_abs = np.zeros_like(transform_abs)
+                    backtransform_phase = backtransform_abs
+
+                # update the user interface:
+                self.blobs.emit(blobs.shape[0])
+                self.clearCircles.emit()
+                # if it's not too many, plot all blobs in blue:
+                if 0 < blobs.shape[0] < 30:
+                    for i in range(blobs.shape[0]):
+                        self.circle.emit((blobs[i, 0], blobs[i, 1]), blobs[i, 2], 'blue')
+                    if found_3_blobs:
+                        self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
+                        self.blob_position.emit(main_blob[0], main_blob[1], main_blob[2])
+                self.fft.emit(transform_abs)
+                self.backtransform.emit(backtransform_abs)
+                self.phase.emit(backtransform_phase)
+
+            else:   # with fixed blob position
+                main_blob = [blob_x, blob_y, blob_r]
                 shifted_transform = vtc.mask_and_shift(transform, main_blob[0], main_blob[1], main_blob[2])
                 backtransform, backtransform_abs, backtransform_phase = vtc.inv_fourier_transform(shifted_transform)
-            else:
-                backtransform_abs = np.zeros_like(transform_abs)
-                backtransform_phase = backtransform_abs
-
-            # update the user interface:
-            self.blobs.emit(blobs.shape[0])
-            self.clearCircles.emit()
-            # if it's not too many, plot all blobs in blue:
-            if 0 < blobs.shape[0] < 30:
-                for i in range(blobs.shape[0]):
-                    self.circle.emit((blobs[i, 0], blobs[i, 1]), blobs[i, 2], 'blue')
-                if found_3_blobs:
-                    self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
-            self.fft.emit(transform_abs)
-            self.backtransform.emit(backtransform_abs)
-            self.phase.emit(backtransform_phase)
+                self.blobs.emit(1)
+                self.clearCircles.emit()
+                self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
+                self.fft.emit(transform_abs)
+                self.backtransform.emit(backtransform_abs)
+                self.phase.emit(backtransform_phase)
 
             # see if new data is available, go to sleep if not
             self._mutex.lock()
@@ -131,7 +150,7 @@ class FFTPlugin2(QObject):
 
         self.canvas = plugin_canvas_pyqtgraph.PluginCanvasPyqtgraph(parent, send_data_function)
         self.canvas.set_name(name)
-        self.canvas.resize(700, 450)
+        self.canvas.resize(700, 500)
         self.layoutWidget = self.canvas.layoutWidget
 
         # make fields to enter parameters:
@@ -175,8 +194,33 @@ class FFTPlugin2(QObject):
         param_widget.setLayout(self.canvas.param_layout)
         self.canvas.layout.insertWidget(1, param_widget)
 
+        self.blob_boxes = {}
+        self.canvas.blob_layout = QHBoxLayout()
+        blob_text = QLabel("Main blob position: ")
+        self.canvas.blob_layout.addWidget(blob_text)
+        self.blob_boxes["auto"] = QCheckBox("auto")
+        self.blob_boxes["auto"].setChecked(True)
+        self.canvas.blob_layout.addWidget((self.blob_boxes["auto"]))
+        for param in ["x", "y", "r"]:
+            if param == "r":
+                spin_box = QDoubleSpinBox()
+            else:
+                spin_box = QSpinBox()
+            self.blob_boxes[param] = spin_box
+            param_label = QLabel(param + ":")
+            self.canvas.blob_layout.addWidget(param_label)
+            self.canvas.blob_layout.addWidget(spin_box)
+        blob_widget = QWidget()
+        blob_widget.setLayout(self.canvas.blob_layout)
+        self.canvas.layout.insertWidget(2, blob_widget)
+        self.blob_boxes["x"].setMaximum(300)
+        self.blob_boxes["y"].setMaximum(300)
+        self.blob_boxes["r"].setSingleStep(0.5)
+        self.blob_boxes["r"].setDecimals(1)
+        self.blob_boxes["r"].setMaximum(30)
+
         self.blob_label = QLabel("Blobs found: #")
-        self.canvas.layout.insertWidget(2, self.blob_label)
+        self.canvas.layout.insertWidget(3, self.blob_label)
 
         # some image plots:
         viridis = generatePgColormap('viridis')
@@ -213,6 +257,7 @@ class FFTPlugin2(QObject):
         self.workerThread.backtransform.connect(self.setBacktransform)
         self.workerThread.phase.connect(self.setPhase)
         self.workerThread.blobs.connect(self.setBlobsLabel)
+        self.workerThread.blob_position.connect(self.setBlobCoords)
 
     def plotCircle(self, origin, radius, color_name):
         if color_name == "green":
@@ -242,13 +287,22 @@ class FFTPlugin2(QObject):
     def setBlobsLabel(self, number_blobs):
         self.blob_label.setText("Blobs found: <b>{}</b>".format(number_blobs))
 
+    def setBlobCoords(self, x, y, r):
+        self.blob_boxes["x"].setValue(x)
+        self.blob_boxes["y"].setValue(y)
+        self.blob_boxes["r"].setValue(r)
+
     def process_frame(self, frame: np.ndarray):
         parameters = {'min_sigma': self.parameter_boxes["min_sigma"].value(),
                       'max_sigma': self.parameter_boxes["max_sigma"].value(),
                       'overlap': self.parameter_boxes["overlap"].value(),
                       'threshold': self.parameter_boxes["threshold"].value(),
                       'method': self.parameter_boxes["method"].currentText(),
-                      'auto': self.parameter_boxes["auto"].isChecked()}
+                      'auto': self.parameter_boxes["auto"].isChecked(),
+                      'blob_x': self.blob_boxes["x"].value(),
+                      'blob_y': self.blob_boxes["y"].value(),
+                      'blob_r': self.blob_boxes["r"].value(),
+                      'auto_blob': self.blob_boxes["auto"].isChecked()}
 
         self.frameAvailable.emit(frame, parameters)
 
