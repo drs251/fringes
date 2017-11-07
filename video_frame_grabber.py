@@ -35,6 +35,17 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         self._supportedPixelFormats = self.supportedFormats
         self._nativeResolution = None
         self._clipSize = QRectF()
+        self._cacheFlag = False
+        self._cachedImage = None
+
+    @pyqtSlot()
+    def cacheNextImage(self):
+        self._cacheFlag = True
+
+    @pyqtSlot("QString")
+    def saveCachedImage(self, path):
+        self._cachedImage.save(path)
+        self._cachedImage = None
 
     # This will probably never be called...
     @pyqtProperty(QAbstractVideoSurface, notify=videoSurfaceChanged)
@@ -100,6 +111,12 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         # fix upside-down data for windows
         if platform.system() == "Windows":
             image = image.mirrored(vertical=True)
+
+        # if requested, save image to disk
+        # we do it here to get an unscaled version of the image
+        if self._cacheFlag:
+            self._cachedImage = image
+            self._cacheFlag = False
 
         if self._clipSize != QRectF():
             # scale according to rectangle selected in main window:

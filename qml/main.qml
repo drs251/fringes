@@ -238,8 +238,7 @@ ApplicationWindow {
             } else {
                 urlNoProtocol = (fileUrl+"").replace('file://', '');
             }
-            var success = top_menu.savedImage.saveToFile(urlNoProtocol)
-            if (!success) console.log("An error occured during saving!")
+            frameGrabber.saveCachedImage(urlNoProtocol)
         }
     }
 
@@ -256,13 +255,9 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.right: parent.right
 
-        property var savedImage
-
         onSaveImage: {
-            output.grabToImage(function(result) {
-                top_menu.savedImage = result
-                saveImageDialog.open()
-            });
+            frameGrabber.cacheNextImage()
+            saveImageDialog.open()
         }
 
         onManagePlugins: {
