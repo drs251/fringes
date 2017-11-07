@@ -14,6 +14,8 @@ ApplicationWindow {
     height: 540 //720
     title: "Fringes"
 
+    property var folder: ""
+
     onClosing: Qt.quit()
 
     // This shows the original video from the camera
@@ -243,6 +245,7 @@ ApplicationWindow {
                 urlNoProtocol = (fileUrl+"").replace('file://', '');
             }
             frameGrabber.saveCachedImage(urlNoProtocol)
+            root.folder = fileUrl
         }
     }
 
@@ -261,6 +264,7 @@ ApplicationWindow {
 
         onSaveImage: {
             frameGrabber.cacheNextImage()
+            saveImageDialog.folder = root.folder
             saveImageDialog.open()
         }
 
