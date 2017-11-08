@@ -220,7 +220,7 @@ ApplicationWindow {
                 var y1 = clip_canvas.startY
                 var y2 = clip_canvas.lastY
 
-                frameGrabber.setClipping(x1, y1, x2, y2, output.contentRect.width, output.contentRect.height)
+                frameGrabber.setClipping(x1, y1, x2, y2, output.contentRect)
 
                 bottom_menu.enableClipping = false
             }

@@ -179,12 +179,14 @@ class VideoFrameGrabber(QAbstractVideoSurface):
     def isActive(self) -> bool:
         return self._source is not None
 
-    @pyqtSlot(int, int, int, int, int, int)
-    def setClipping(self, x1, y1, x2, y2, window_width, window_height):
+    @pyqtSlot(int, int, int, int, QRect)
+    def setClipping(self, x1, y1, x2, y2, contentRect):
         if x1 == 0 and y1 == 0 and x2 == 0 and y2 == 0:
             self._clipSize = QRectF()
         else:
             x1, x2 = sorted((x1, x2))
             y1, y2 = sorted((y1, y2))
-            self._clipSize = QRectF(x1 / window_width, y1 / window_height,
-                                    abs(x2 - x1) / window_width, abs(y2 - y1) / window_height)
+            self._clipSize = QRectF((x1 - contentRect.left()) / contentRect.width(),
+                                    (y1 - contentRect.top()) / contentRect.height(),
+                                    abs(x2 - x1) / contentRect.width(),
+                                    abs(y2 - y1) / contentRect.height())
