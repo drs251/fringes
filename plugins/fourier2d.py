@@ -25,6 +25,7 @@ def generatePgColormap(cm_name):
 class FFTWorker(QThread):
 
     blobs = pyqtSignal(int)
+    real = pyqtSignal(np.ndarray)
     fft = pyqtSignal(np.ndarray)
     backtransform = pyqtSignal(np.ndarray)
     phase = pyqtSignal(np.ndarray)
@@ -71,15 +72,21 @@ class FFTWorker(QThread):
             blob_y = parameters['blob_y']
             blob_r = parameters['blob_r']
             auto_blob = parameters['auto_blob']
+            homogenize = parameters['homogenize']
+            homogenize_value = parameters['homogenize_value']
 
             # convert frame to grayscale and rotate to give the correction orientation
             data = frame.sum(axis=2).astype(np.float64)
             data = np.rot90(data, axes=(1,0))
 
+            if homogenize:
+                data = vtc.homogenize(data, homogenize_value)
+
             # apply window function to get rid of artifacts:
-            width, height = data.shape
-            window = np.outer(np.hanning(width), np.hanning(height))
-            data *= window
+            #TODO (this is most likely unecessary...)
+            #width, height = data.shape
+            #window = np.outer(np.hanning(width), np.hanning(height))
+            #data *= window
 
             # calculate and plot transform
             transform, transform_abs = vtc.fourier_transform(data, 300)
@@ -114,6 +121,7 @@ class FFTWorker(QThread):
                     if found_3_blobs:
                         self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
                         self.blob_position.emit(main_blob[0], main_blob[1], main_blob[2])
+                self.real.emit(data)
                 self.fft.emit(transform_abs)
                 self.backtransform.emit(backtransform_abs)
                 self.phase.emit(backtransform_phase)
@@ -125,6 +133,7 @@ class FFTWorker(QThread):
                 self.blobs.emit(1)
                 self.clearCircles.emit()
                 self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
+                self.real.emit(data)
                 self.fft.emit(transform_abs)
                 self.backtransform.emit(backtransform_abs)
                 self.phase.emit(backtransform_phase)
@@ -150,7 +159,7 @@ class FFTPlugin2(QObject):
 
         self.canvas = plugin_canvas_pyqtgraph.PluginCanvasPyqtgraph(parent, send_data_function)
         self.canvas.set_name(name)
-        self.canvas.resize(700, 500)
+        self.canvas.resize(900, 500)
         self.layoutWidget = self.canvas.layoutWidget
 
         # make fields to enter parameters:
@@ -201,6 +210,7 @@ class FFTPlugin2(QObject):
         self.blob_boxes["auto"] = QCheckBox("auto")
         self.blob_boxes["auto"].setChecked(True)
         self.canvas.blob_layout.addWidget((self.blob_boxes["auto"]))
+        self.canvas.blob_layout.addStretch(1)
         for param in ["x", "y", "r"]:
             if param == "r":
                 spin_box = QDoubleSpinBox()
@@ -210,6 +220,14 @@ class FFTPlugin2(QObject):
             param_label = QLabel(param + ":")
             self.canvas.blob_layout.addWidget(param_label)
             self.canvas.blob_layout.addWidget(spin_box)
+            self.canvas.blob_layout.addStretch(1)
+        homogenize_box = QCheckBox("homogenize")
+        self.blob_boxes["homogenize"] = homogenize_box
+        self.canvas.blob_layout.addWidget(homogenize_box)
+        homogenize_value = QDoubleSpinBox()
+        homogenize_value.setValue(4.0)
+        self.blob_boxes["homogenize_value"] = homogenize_value
+        self.canvas.blob_layout.addWidget(homogenize_value)
         blob_widget = QWidget()
         blob_widget.setLayout(self.canvas.blob_layout)
         self.canvas.layout.insertWidget(2, blob_widget)
@@ -225,6 +243,13 @@ class FFTPlugin2(QObject):
         # some image plots:
         viridis = generatePgColormap('viridis')
         inferno = generatePgColormap('inferno')
+
+        self.realplot = self.layoutWidget.addPlot(title="Real space")
+        self.realplot.setAspectLocked()
+        self.realplot.showAxis('bottom', False)
+        self.realplot.showAxis('left', False)
+        self.realimage = pg.ImageItem()
+        self.realplot.addItem(self.realimage)
 
         self.fftplot = self.layoutWidget.addPlot(title="FFT")
         self.fftplot.setAspectLocked()
@@ -253,6 +278,7 @@ class FFTPlugin2(QObject):
         self.frameAvailable.connect(self.workerThread.processFrame)
         self.workerThread.clearCircles.connect(self.clearCircles)
         self.workerThread.circle.connect(self.plotCircle)
+        self.workerThread.real.connect(self.setReal)
         self.workerThread.fft.connect(self.setFft)
         self.workerThread.backtransform.connect(self.setBacktransform)
         self.workerThread.phase.connect(self.setPhase)
@@ -274,6 +300,9 @@ class FFTPlugin2(QObject):
         for circle in self.circle_plots:
             self.fftplot.removeItem(circle)
         self.circle_plots = []
+
+    def setReal(self, real):
+        self.realimage.setImage(real)
 
     def setFft(self, fft):
         self.fftimage.setImage(fft)
@@ -302,7 +331,10 @@ class FFTPlugin2(QObject):
                       'blob_x': self.blob_boxes["x"].value(),
                       'blob_y': self.blob_boxes["y"].value(),
                       'blob_r': self.blob_boxes["r"].value(),
-                      'auto_blob': self.blob_boxes["auto"].isChecked()}
+                      'auto_blob': self.blob_boxes["auto"].isChecked(),
+                      'homogenize': self.blob_boxes["homogenize"].isChecked(),
+                      'homogenize_value': self.blob_boxes["homogenize_value"].value()
+                      }
 
         self.frameAvailable.emit(frame, parameters)
 
