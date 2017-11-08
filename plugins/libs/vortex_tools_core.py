@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.fftpack as fftpack
 from skimage.feature import blob_dog, blob_log
+import numpy.fft
+import scipy.ndimage
 
 
 def fourier_transform(image, transform_size=200):
@@ -321,3 +323,15 @@ def gauss2d(x, y, a, sigma, mx=0, my=0):
     :return: Numpy array
     """
     return a * np.exp(-((x - mx) ** 2 + (y - my) ** 2) / (2. * sigma ** 2))
+
+
+def fft_blur(image, sigma=4):
+    input_ = numpy.fft.fft2(image)
+    filtered = scipy.ndimage.fourier_gaussian(input_, sigma)
+    return numpy.fft.ifft2(filtered).real
+
+
+def homogenize(image, sigma=4):
+    blurred = fft_blur(image, sigma)
+    ratio = np.nan_to_num(image / blurred)
+    return ratio
