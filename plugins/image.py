@@ -88,6 +88,7 @@ class PolarizationPlugin(QObject):
         self.canvas = plugin_canvas_pyqtgraph.PluginCanvasPyqtgraph(parent, send_data_function)
         self.canvas.set_name(name)
         self.layoutWidget = self.canvas.layoutWidget
+        self.canvas.resize(350, 400)
 
         self.layout = QHBoxLayout()
         self.homogenizeCheckbox = QCheckBox("homogenize")

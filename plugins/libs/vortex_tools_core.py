@@ -19,6 +19,7 @@ DEF_BLUR = 1.5
 DEF_BLUR_HOMO = 0
 DEF_WINDOW = "cosine"
 DEF_NUMBER_BLOBS = 3
+DEF_THRESHOLDS_PER_DECADE = 5
 
 
 def fourier_transform(image, transform_size=DEF_TRANSFORM_SIZE):
@@ -226,7 +227,7 @@ def find_number_blobs(transform, number=DEF_NUMBER_BLOBS, min_sigma=DEF_MIN_SIGM
 
     # try to find 3 or more blobs by decreasing the threshold until it's 0.001
     blobs = np.zeros((0, 3))
-    divisor = np.power(10., 1/2)
+    divisor = np.power(10., 1/DEF_THRESHOLDS_PER_DECADE)
     while blobs.shape[0] < number and threshold > 0.001:
         blobs = find_blobs(transform, min_sigma, max_sigma, overlap, threshold, method)
         threshold /= divisor
