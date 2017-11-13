@@ -95,7 +95,7 @@ class FFTWorker(QThread):
             if auto_blob:
 
                 if auto:   # automatic threshold finding
-                    blobs = vtc.find_3_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
+                    blobs = vtc.find_number_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
                                              overlap=overlap, threshold=threshold, method=method)
                 else:
                     blobs = vtc.find_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
@@ -121,7 +121,6 @@ class FFTWorker(QThread):
                     if found_3_blobs:
                         self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
                         self.blob_position.emit(main_blob[0], main_blob[1], main_blob[2])
-                self.real.emit(data)
                 self.fft.emit(transform_abs)
                 self.backtransform.emit(backtransform_abs)
                 self.phase.emit(backtransform_phase)
@@ -133,7 +132,6 @@ class FFTWorker(QThread):
                 self.blobs.emit(1)
                 self.clearCircles.emit()
                 self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
-                self.real.emit(data)
                 self.fft.emit(transform_abs)
                 self.backtransform.emit(backtransform_abs)
                 self.phase.emit(backtransform_phase)
@@ -243,13 +241,7 @@ class FFTPlugin2(QObject):
         # some image plots:
         viridis = generatePgColormap('viridis')
         inferno = generatePgColormap('inferno')
-
-        self.realplot = self.layoutWidget.addPlot(title="Real space")
-        self.realplot.setAspectLocked()
-        self.realplot.showAxis('bottom', False)
-        self.realplot.showAxis('left', False)
-        self.realimage = pg.ImageItem()
-        self.realplot.addItem(self.realimage)
+        magma = generatePgColormap('magma')
 
         self.fftplot = self.layoutWidget.addPlot(title="FFT")
         self.fftplot.setAspectLocked()
@@ -262,7 +254,7 @@ class FFTPlugin2(QObject):
         self.transformplot.setAspectLocked()
         self.transformplot.showAxis('bottom', False)
         self.transformplot.showAxis('left', False)
-        self.transformimage = pg.ImageItem()
+        self.transformimage = pg.ImageItem(lut=magma.getLookupTable())
         self.transformplot.addItem(self.transformimage)
 
         self.phaseplot = self.layoutWidget.addPlot(title="Phase")
@@ -278,7 +270,6 @@ class FFTPlugin2(QObject):
         self.frameAvailable.connect(self.workerThread.processFrame)
         self.workerThread.clearCircles.connect(self.clearCircles)
         self.workerThread.circle.connect(self.plotCircle)
-        self.workerThread.real.connect(self.setReal)
         self.workerThread.fft.connect(self.setFft)
         self.workerThread.backtransform.connect(self.setBacktransform)
         self.workerThread.phase.connect(self.setPhase)
@@ -300,9 +291,6 @@ class FFTPlugin2(QObject):
         for circle in self.circle_plots:
             self.fftplot.removeItem(circle)
         self.circle_plots = []
-
-    def setReal(self, real):
-        self.realimage.setImage(real)
 
     def setFft(self, fft):
         self.fftimage.setImage(fft)

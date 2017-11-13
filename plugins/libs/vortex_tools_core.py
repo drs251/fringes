@@ -1,11 +1,27 @@
 import numpy as np
 import scipy.fftpack as fftpack
-from skimage.feature import blob_dog, blob_log
+from skimage.feature import blob_dog, blob_log, blob_doh
 import numpy.fft
 import scipy.ndimage
+from scipy.ndimage.filters import gaussian_filter
+from scipy import signal
 
 
-def fourier_transform(image, transform_size=200):
+# uniform default values:
+DEF_THRESHOLD = 1
+DEF_MIN_SIGMA = 4
+DEF_MAX_SIGMA = 10
+DEF_TRANSFORM_SIZE = 200
+DEF_OVERLAP = 0.
+DEF_METHOD = 'dog'
+DEF_SIGMA = 4
+DEF_BLUR = 1.5
+DEF_BLUR_HOMO = 0
+DEF_WINDOW = "cosine"
+DEF_NUMBER_BLOBS = 3
+
+
+def fourier_transform(image, transform_size=DEF_TRANSFORM_SIZE):
     """
     Calculates the Fourier transform of a 2D numpy array and returns another numpy array containing the
     absolute value with logarithmic scaling.
@@ -150,8 +166,8 @@ def pick_blob(blobs, pick_opposite=False):
     return blobs[index]
 
 
-def find_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
-               threshold=0.03, method='log'):
+def find_blobs(transform, min_sigma=DEF_MIN_SIGMA, max_sigma=DEF_MAX_SIGMA, overlap=DEF_OVERLAP,
+               threshold=DEF_THRESHOLD, method=DEF_METHOD):
     """
     Finds blobs in a Fourier transform and returns their coordinates
 
@@ -176,8 +192,10 @@ def find_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
         method = blob_log
     elif method == 'dog':
         method = blob_dog
+    elif method == 'doh':
+        method = blob_doh
     else:
-        raise Exception("Bad method '{}'. Use 'log' or 'dog'.")
+        raise Exception("Bad method '{}'. Use 'log', 'dog' or 'dow'.")
 
     blobs = method(transform_log, max_sigma=max_sigma, min_sigma=min_sigma,
                    threshold=threshold, overlap=overlap)
@@ -186,8 +204,8 @@ def find_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
     return blobs
 
 
-def find_3_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
-                 threshold=0.5, method='log'):
+def find_number_blobs(transform, number=DEF_NUMBER_BLOBS, min_sigma=DEF_MIN_SIGMA, max_sigma=DEF_MAX_SIGMA, overlap=DEF_OVERLAP,
+                 threshold=DEF_THRESHOLD, method=DEF_METHOD):
     """
     Attempts to find the three strongest blobs in a Fourier transform and returns their coordinates
 
@@ -209,10 +227,10 @@ def find_3_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
     # try to find 3 or more blobs by decreasing the threshold until it's 0.001
     blobs = np.zeros((0, 3))
     divisor = np.power(10., 1/2)
-    while blobs.shape[0] < 3 and threshold > 0.001:
+    while blobs.shape[0] < number and threshold > 0.001:
         blobs = find_blobs(transform, min_sigma, max_sigma, overlap, threshold, method)
         threshold /= divisor
-    if blobs.shape[0] <= 3:
+    if blobs.shape[0] <= number:
         return blobs
 
     # calculate the integral and return the three most intense blobs
@@ -222,7 +240,7 @@ def find_3_blobs(transform, min_sigma=8, max_sigma=17, overlap=0.,
         integral = np.sum(apply_mask(transform, blob[0], blob[1], blob[2]))
         blob_dict[integral] = blob
     ret_blobs = []
-    for key in sorted(blob_dict.keys())[0:3]:
+    for key in sorted(blob_dict.keys())[0:number]:
         ret_blobs.append(blob_dict[key])
     return np.array(ret_blobs)
 
@@ -262,41 +280,6 @@ def mask_and_shift(transform, x, y, radius):
     return transform
 
 
-def extract_phase(interferogram, min_sigma=8, max_sigma=17, overlap=0,
-                  threshold=0.03, method='log', transform_size=200):
-    """
-    Extracts the phase of an interferogram by calculating the Fourier transform, shifting the outer blob to the center
-    of the frequency space and performing an inverse Fourier transform. The blob is found automatically. Returns a
-    report showing the Fourier transform with the found blobs, as well as a HoloMap containing the inverse
-    transform.
-
-    :param interferogram: numpy array containing an interferogram
-    :param min_sigma: For find_blobs
-    :param max_sigma: For find_blobs
-    :param overlap: For find_blobs
-    :param threshold: For find_blob
-    :param method: Peak finding method: 'log' for Laplacian of Gaussians, 'dog' for Difference of Gaussians
-    (Default: 'log')
-    :param transform_size: Size in pixels that the Fourier transform should be clipped to
-    :return: Tuple of the inverse Fourier transform and the main blob coordinates as (x, y, radius)
-    """
-
-    transform, transform_abs = fourier_transform(interferogram, transform_size=transform_size)
-
-    # find and plot blobs
-    blobs = find_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
-                       overlap=overlap, threshold=threshold, method=method)
-
-    if not blobs.shape[0] == 3:
-        raise Exception("Error: found {} blobs instead of 3!".format(blobs.shape[0]))
-
-    main_blob = pick_blob(blobs)
-
-    shifted_transform = mask_and_shift(transform, main_blob[0], main_blob[1], main_blob[2])
-
-    return inv_fourier_transform(shifted_transform), main_blob
-
-
 def gauss(x, a, sigma, mux=0):
     """
     A gaussian
@@ -325,13 +308,23 @@ def gauss2d(x, y, a, sigma, mx=0, my=0):
     return a * np.exp(-((x - mx) ** 2 + (y - my) ** 2) / (2. * sigma ** 2))
 
 
-def fft_blur(image, sigma=4):
+def fft_blur(image, sigma=DEF_BLUR):
     input_ = numpy.fft.fft2(image)
     filtered = scipy.ndimage.fourier_gaussian(input_, sigma)
     return numpy.fft.ifft2(filtered).real
 
 
-def homogenize(image, sigma=4):
+def homogenize(image, sigma=DEF_SIGMA, blur=DEF_BLUR_HOMO):
     blurred = fft_blur(image, sigma)
     ratio = np.nan_to_num(image / blurred)
+    if blur != 0:
+        ratio = gaussian_filter(ratio, blur)
     return ratio
+
+
+def apply_window(data, window=DEF_WINDOW, *args):
+    width, height = data.shape
+    x_window = signal.get_window((window, *args), width)
+    y_window = signal.get_window((window, *args), height)
+    window = np.outer(x_window, y_window)
+    return data * window
