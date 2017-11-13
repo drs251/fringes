@@ -163,7 +163,7 @@ def pick_blob(blobs, pick_opposite=False):
             index = blob_coords[:, 1].argmax(axis=0)
         else:
             index = blob_coords[:, 1].argmin(axis=0)
-    return blobs[index]
+    return blobs[index].copy()
 
 
 def find_blobs(transform, min_sigma=DEF_MIN_SIGMA, max_sigma=DEF_MAX_SIGMA, overlap=DEF_OVERLAP,

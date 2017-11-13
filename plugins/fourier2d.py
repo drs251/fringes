@@ -40,6 +40,7 @@ class FFTWorker(QThread):
         self.frame = None
         self.parameters = None
         self.abort = False
+        self.transform_size = 300
 
     def processFrame(self, frame, parameters):
         self._mutex.lock()
@@ -66,6 +67,7 @@ class FFTWorker(QThread):
             max_sigma = parameters['max_sigma']
             overlap = parameters['overlap']
             threshold = parameters['threshold']
+            number = parameters['number']
             method = parameters['method']
             auto = parameters['auto']
             blob_x = parameters['blob_x']
@@ -74,13 +76,14 @@ class FFTWorker(QThread):
             auto_blob = parameters['auto_blob']
             homogenize = parameters['homogenize']
             homogenize_value = parameters['homogenize_value']
+            homogenize_blur = parameters['homogenize_blur']
 
             # convert frame to grayscale and rotate to give the correction orientation
             data = frame.sum(axis=2).astype(np.float64)
             data = np.rot90(data, axes=(1,0))
 
             if homogenize:
-                data = vtc.homogenize(data, homogenize_value)
+                data = vtc.homogenize(data, homogenize_value, homogenize_blur)
 
             # apply window function to get rid of artifacts:
             #TODO (this is most likely unecessary...)
@@ -89,22 +92,27 @@ class FFTWorker(QThread):
             #data *= window
 
             # calculate and plot transform
-            transform, transform_abs = vtc.fourier_transform(data, 300)
+            transform, transform_abs = vtc.fourier_transform(data, self.transform_size)
             transform_abs = np.nan_to_num(np.log(transform_abs))
 
             if auto_blob:
 
                 if auto:   # automatic threshold finding
-                    blobs = vtc.find_number_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
+                    blobs = vtc.find_number_blobs(transform, number=number, max_sigma=max_sigma, min_sigma=min_sigma,
                                              overlap=overlap, threshold=threshold, method=method)
                 else:
                     blobs = vtc.find_blobs(transform, max_sigma=max_sigma, min_sigma=min_sigma,
                                            overlap=overlap, threshold=threshold, method=method)
-                found_3_blobs = blobs.shape[0] == 3
+                found_blobs = blobs.shape[0] == number
 
-                if found_3_blobs:
+                if found_blobs:
                     # success! get the main blob and do a reverse transform
                     main_blob = vtc.pick_blob(blobs)
+
+                    # extend the main blob for greatest possible resolution:
+                    center = (self.transform_size / 2) - 1
+                    main_blob[2] = np.sqrt((main_blob[0] - center) ** 2 + (main_blob[1] - center) ** 2) / 2
+
                     shifted_transform = vtc.mask_and_shift(transform, main_blob[0], main_blob[1], main_blob[2])
                     backtransform, backtransform_abs, backtransform_phase = vtc.inv_fourier_transform(shifted_transform)
                 else:
@@ -118,7 +126,7 @@ class FFTWorker(QThread):
                 if 0 < blobs.shape[0] < 30:
                     for i in range(blobs.shape[0]):
                         self.circle.emit((blobs[i, 0], blobs[i, 1]), blobs[i, 2], 'blue')
-                    if found_3_blobs:
+                    if found_blobs:
                         self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
                         self.blob_position.emit(main_blob[0], main_blob[1], main_blob[2])
                 self.fft.emit(transform_abs)
@@ -178,11 +186,26 @@ class FFTPlugin2(QObject):
             group_box.setLayout(layout)
             self.canvas.param_layout.addWidget(group_box)
 
-        combo_box = QComboBox()
-        combo_box.addItem("dog")
-        combo_box.addItem("log")
-        self.canvas.param_layout.addWidget(combo_box)
-        self.parameter_boxes["method"] = combo_box
+        number_box = QComboBox()
+        number_box.addItem("3")
+        number_box.addItem("2")
+        group_box = QGroupBox("Number of blobs")
+        layout = QHBoxLayout()
+        layout.addWidget(number_box)
+        group_box.setLayout(layout)
+        self.canvas.param_layout.addWidget(group_box)
+        self.parameter_boxes["number"] = number_box
+
+        method_box = QComboBox()
+        method_box.addItem("dog")
+        method_box.addItem("log")
+        method_box.addItem("doh")
+        group_box = QGroupBox("method")
+        layout = QHBoxLayout()
+        layout.addWidget(method_box)
+        group_box.setLayout(layout)
+        self.canvas.param_layout.addWidget(group_box)
+        self.parameter_boxes["method"] = method_box
 
         # default parameters:
         self.parameter_boxes["min_sigma"].setValue(8)
@@ -219,6 +242,7 @@ class FFTPlugin2(QObject):
             self.canvas.blob_layout.addWidget(param_label)
             self.canvas.blob_layout.addWidget(spin_box)
             self.canvas.blob_layout.addStretch(1)
+        self.canvas.blob_layout.addStretch(1)
         homogenize_box = QCheckBox("homogenize")
         self.blob_boxes["homogenize"] = homogenize_box
         self.canvas.blob_layout.addWidget(homogenize_box)
@@ -226,6 +250,13 @@ class FFTPlugin2(QObject):
         homogenize_value.setValue(4.0)
         self.blob_boxes["homogenize_value"] = homogenize_value
         self.canvas.blob_layout.addWidget(homogenize_value)
+        self.blur_label = QLabel("blur")
+        self.canvas.blob_layout.addStretch(1)
+        self.canvas.blob_layout.addWidget(self.blur_label)
+        blur_box = QSpinBox()
+        self.blob_boxes["homogenize_blur"] = blur_box
+        blur_box.setValue(0)
+        self.canvas.blob_layout.addWidget(blur_box)
         blob_widget = QWidget()
         blob_widget.setLayout(self.canvas.blob_layout)
         self.canvas.layout.insertWidget(2, blob_widget)
@@ -314,6 +345,7 @@ class FFTPlugin2(QObject):
                       'max_sigma': self.parameter_boxes["max_sigma"].value(),
                       'overlap': self.parameter_boxes["overlap"].value(),
                       'threshold': self.parameter_boxes["threshold"].value(),
+                      'number': int(self.parameter_boxes["number"].currentText()),
                       'method': self.parameter_boxes["method"].currentText(),
                       'auto': self.parameter_boxes["auto"].isChecked(),
                       'blob_x': self.blob_boxes["x"].value(),
@@ -321,7 +353,8 @@ class FFTPlugin2(QObject):
                       'blob_r': self.blob_boxes["r"].value(),
                       'auto_blob': self.blob_boxes["auto"].isChecked(),
                       'homogenize': self.blob_boxes["homogenize"].isChecked(),
-                      'homogenize_value': self.blob_boxes["homogenize_value"].value()
+                      'homogenize_value': self.blob_boxes["homogenize_value"].value(),
+                      'homogenize_blur': self.blob_boxes["homogenize_blur"].value()
                       }
 
         self.frameAvailable.emit(frame, parameters)
