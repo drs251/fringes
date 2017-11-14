@@ -123,6 +123,7 @@ class FFTWorker(QThread):
                     if invWindow:
                         shifted_transform = vtc.apply_window(shifted_transform)
                     backtransform, backtransform_abs, backtransform_phase = vtc.inv_fourier_transform(shifted_transform)
+                    backtransform_phase = self.phase_shift_center(backtransform_phase)
                 else:
                     backtransform_abs = np.zeros_like(transform_abs)
                     backtransform_phase = backtransform_abs
@@ -147,6 +148,7 @@ class FFTWorker(QThread):
                 if invWindow:
                     shifted_transform = vtc.apply_window(shifted_transform)
                 backtransform, backtransform_abs, backtransform_phase = vtc.inv_fourier_transform(shifted_transform)
+                backtransform_phase = self.phase_shift_center(backtransform_phase)
                 self.blobs.emit(1)
                 self.clearCircles.emit()
                 self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
@@ -160,6 +162,13 @@ class FFTWorker(QThread):
             if not data_available:
                 self._condition.wait(self._mutex)
             self._mutex.unlock()
+
+    def phase_shift_center(self, phase):
+        center_x = int(phase.shape[0] / 2 - 1)
+        center_y = int(phase.shape[1] / 2 - 1)
+        shift = phase[center_x, center_y]
+        phase = (phase + 1 + shift) % 2 - 1
+        return phase
 
 
 class FFTPlugin2(QObject):
