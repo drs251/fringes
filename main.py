@@ -4,7 +4,7 @@ from os import path
 import PyQt5
 from PyQt5.QtCore import QObject, QUrl, QCoreApplication, QVariant, pyqtSlot, QTimer
 from PyQt5.QtGui import QGuiApplication, QIcon
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QFileDialog
 from PyQt5.QtQml import qmlRegisterType, QQmlComponent, QQmlEngine, QQmlApplicationEngine
 from PyQt5.QtMultimedia import QVideoProbe, QCamera, QVideoFrame, QCameraInfo, QAbstractVideoSurface
 # this import needs to come before QApplication is created, "to avoid bugs":
@@ -13,6 +13,7 @@ import pyqtgraph
 from plugin_loader import PluginLoader
 from video_frame_grabber import VideoFrameGrabber
 from cam_settings import CameraSettings
+from savenamegenerator import SaveNameGenerator
 
 
 app = QApplication(sys.argv)
@@ -36,6 +37,9 @@ context.setContextProperty("frameGrabber", frameGrabber)
 
 cameraSettings = CameraSettings(app)
 context.setContextProperty("cameraSettings", cameraSettings)
+
+saveNameGenerator = SaveNameGenerator()
+context.setContextProperty("saveNameGenerator", saveNameGenerator)
 
 engine.load('./qml/main.qml')
 root = engine.rootObjects()[0]

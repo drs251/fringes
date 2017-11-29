@@ -246,6 +246,7 @@ ApplicationWindow {
             }
             frameGrabber.saveCachedImage(urlNoProtocol)
             root.folder = fileUrl
+            saveNameGenerator.setPrevName(urlNoProtocol)
         }
     }
 
@@ -265,6 +266,8 @@ ApplicationWindow {
         onSaveImage: {
             frameGrabber.cacheNextImage()
             saveImageDialog.folder = root.folder
+            //saveImageDialog.fileUrl = saveNameGenerator.nextName
+            console.log(saveNameGenerator.nextName)
             saveImageDialog.open()
         }
 
