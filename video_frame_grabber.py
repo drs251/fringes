@@ -25,7 +25,7 @@ class VideoFrameGrabber(QAbstractVideoSurface):
         QVideoFrame.Format_ARGB32
     ]
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, camera=None):
         super().__init__(parent)
         self._source = None
         self._surface = None

@@ -1,31 +1,22 @@
 import win32com.client as com
 from PyQt5.QtCore import qDebug
+from device_settings import DeviceSettings
 
 
-# a decorator for easy checking that the device is valid
-# before a function is run
-def _ensure_valid(func):
-    def wrapper(self, *args, **kwargs):
-        if not self._valid():
-            raise RuntimeError("Operation on invalid device!")
-        return func(self, *args, **kwargs)
-    return wrapper
-
-
-class TisSettings:
+class TisSettings(DeviceSettings):
 
     # to convert the values from TIS into nice units:
     _gain_factor = 10
     _exposure_factor = 10
 
     def __init__(self):
-        self._control = com.Dispatch("IC.ICImagingControl3")
+        self._camera = com.Dispatch("IC.ICImagingControl3")
         self._manualMode = False
         self._active = False
 
         devices = self._get_available_devices()
         if len(devices) > 0:
-            self._control.DeviceUniqueName = self._get_unique_name(devices[0])
+            self._camera.DeviceUniqueName = self._get_unique_name(devices[0])
             if not self._valid:
                 qDebug("TisSettings: Could not get valid device.")
             else:
@@ -36,13 +27,13 @@ class TisSettings:
         pass
 
     def _clear_interface(self):
-        if self._control.DeviceValid:
-            self._control.LiveStop()
-            self._control.DeviceFrameFilters.Clear()
-            self._control.Device = ""
+        if self._camera.DeviceValid:
+            self._camera.LiveStop()
+            self._camera.DeviceFrameFilters.Clear()
+            self._camera.Device = ""
 
     def _get_available_devices(self):
-        devices = self._control.Devices
+        devices = self._camera.Devices
         count = devices.Count
         res = []
         for i in range(count):
@@ -56,63 +47,63 @@ class TisSettings:
         return name + " " + serial
 
     def _valid(self):
-        return self._control.DeviceValid
+        return self._camera.DeviceValid
 
     def _show_dialog(self):
-        self._control.ShowDeviceSettingsDialog()
-        if not self._control.DeviceValid:
+        self._camera.ShowDeviceSettingsDialog()
+        if not self._camera.DeviceValid:
             raise RuntimeError("invalid device")
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def get_exposure(self):
-        return self._control.Exposure / self._exposure_factor
+        return self._camera.Exposure / self._exposure_factor
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def get_exposure_range(self):
-        rng = self._control.ExposureRange
+        rng = self._camera.ExposureRange
         scaled_rng = [bound / self._exposure_factor for bound in rng]
         return scaled_rng
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def is_auto_exposure(self):
-        return self._control.ExposureAuto
+        return self._camera.ExposureAuto
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def set_auto_exposure(self, auto):
-        self._control.ExposureAuto = auto
+        self._camera.ExposureAuto = auto
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def is_auto_gain(self):
-        return self._control.GainAuto
+        return self._camera.GainAuto
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def set_auto_gain(self, auto):
-        self._control.GainAuto = auto
+        self._camera.GainAuto = auto
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def get_gain(self):
-        return self._control.Gain / self._gain_factor
+        return self._camera.Gain / self._gain_factor
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def get_gain_range(self):
-        rng = self._control.GainRange
+        rng = self._camera.GainRange
         scaled_rng = [bound / self._exposure_factor for bound in rng]
         return scaled_rng
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def set_exposure(self, exposure):
         exposure = int(exposure * self._exposure_factor)
-        rng = self._control.ExposureRange
+        rng = self._camera.ExposureRange
         if not rng[0] <= exposure <= rng[1]:
             raise ValueError("Exposure parameter {} is outside of allowed range {}".format(exposure, rng))
         self.set_auto_exposure(False)
-        self._control.Exposure = exposure
+        self._camera.Exposure = exposure
 
-    @_ensure_valid
+    @DeviceSettings._ensure_valid
     def set_gain(self, gain):
         gain = int(gain * self._gain_factor)
-        rng = self._control.GainRange
+        rng = self._camera.GainRange
         if not rng[0] <= gain <= rng[1]:
             raise ValueError("Gain parameter {} is outside of allowed range {}".format(gain, rng))
         self.set_auto_gain(False)
-        self._control.Gain = gain
+        self._camera.Gain = gain

@@ -15,7 +15,7 @@ class CameraSettings(QObject):
     activeChanged = pyqtSignal()
     saturationChanged = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, camera=None):
         super().__init__(parent)
         # does the user currently control the exposure settings manually:
         self._manualMode = False
@@ -39,9 +39,8 @@ class CameraSettings(QObject):
         # ideally, the CameraSettings class should provide the settings
         # for the camera which is currently selected, but for now,
         # only "The Image Source" camera settings are supported
-        try:
-            import tis_cam.tis_settings as tis
-            self._deviceSettings = tis.TisSettings()
+        if camera != None:
+            self._deviceSettings = camera
             self.getExposureTime()
             self.getGain()
             self.active = True
@@ -51,8 +50,6 @@ class CameraSettings(QObject):
             self.timer = QTimer()
             self.timer.timeout.connect(self.autoSaturation)
             self.timer.start(self._autoSaturationInterval)
-        except Exception as err:
-            print("unable to load tis_settings module: " + str(err))
 
 
     @pyqtSlot('QString')

@@ -15,6 +15,8 @@ from video_frame_grabber import VideoFrameGrabber
 from cam_settings import CameraSettings
 from savenamegenerator import SaveNameGenerator
 
+import zwoasi
+
 
 app = QApplication(sys.argv)
 app.setWindowIcon(QIcon('fringes.png'))
@@ -22,20 +24,21 @@ app.setWindowIcon(QIcon('fringes.png'))
 engine = QQmlApplicationEngine()
 context = engine.rootContext()
 
-# print("available cameras (Qt):")
-# cameras = QCameraInfo.availableCameras()
-# for i, camera in enumerate(cameras):
-#     print(str(i) + "> " + camera.description())
-# if len(cameras) > 1:
-#     cam_number = int(input("Select number: "))
-#     camera = QCamera(cameras[cam_number])
-# else:
-#     camera = QCamera()
+# setup the camera
+zwoasi.init("./zwoasi/libASICamera2.dylib")
+num_cameras = zwoasi.get_num_cameras()
 
-frameGrabber = VideoFrameGrabber()
+if num_cameras > 0:
+    print("{} ZWO camera(s) found.".format(num_cameras))
+    camera = zwoasi.Camera(0)
+else:
+    print("No ZWO cameras found!")
+    camera = None
+
+frameGrabber = VideoFrameGrabber(app, camera)
 context.setContextProperty("frameGrabber", frameGrabber)
 
-cameraSettings = CameraSettings(app)
+cameraSettings = CameraSettings(app, camera)
 context.setContextProperty("cameraSettings", cameraSettings)
 
 saveNameGenerator = SaveNameGenerator()
