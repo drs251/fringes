@@ -41,7 +41,7 @@ Item {
             Row {
                 anchors.fill: parent
                 anchors.margins: 20
-                spacing: 50
+                spacing: 30
 
                 ComboBox {
                     id: camera_combo_box
@@ -52,6 +52,23 @@ Item {
                     onCurrentIndexChanged: {
                         frameGrabber.setSourceFromDeviceId(model[currentIndex].deviceId)
                         cameraSettings.setSourceFromDeviceId(model[currentIndex].deviceId)
+                    }
+                }
+
+                CheckBox {
+                    id: zwo_camera_box
+                    text: "zwo camera"
+                    onClicked: {
+                        if(checked == true) {
+                            camera_combo_box.enabled = false
+                            frameGrabber.setSourceFromDeviceId(zwoCamera)
+                            cameraSettings.setSourceFromDeviceId(zwoCamera)
+                        }
+                        else {
+                            camera_combo_box.enabled = true
+                            frameGrabber.setSourceFromDeviceId(camera_combo_box.model[camera_combo_box.currentIndex].deviceId)
+                            cameraSettings.setSourceFromDeviceId(camera_combo_box.model[camera_combo_box.currentIndex].deviceId)
+                        }
                     }
                 }
 

@@ -39,7 +39,7 @@ class CameraSettings(QObject):
         # ideally, the CameraSettings class should provide the settings
         # for the camera which is currently selected, but for now,
         # only "The Image Source" camera settings are supported
-        if camera != None:
+        if camera is not None:
             self._deviceSettings = camera
             self.getExposureTime()
             self.getGain()
@@ -55,7 +55,7 @@ class CameraSettings(QObject):
     @pyqtSlot('QString')
     def setSourceFromDeviceId(self, devId):
         try:
-            self._deviceSettings.setSourceFromDeviceId(devId)
+            self.__init__(camera=devId)
         except Exception as err:
             qDebug("Could not set source settings. " + str(err))
 

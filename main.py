@@ -30,15 +30,16 @@ num_cameras = zwoasi.get_num_cameras()
 
 if num_cameras > 0:
     print("{} ZWO camera(s) found.".format(num_cameras))
-    camera = zwoasi.Camera(0)
+    zwo_camera = zwoasi.Camera(0)
 else:
     print("No ZWO cameras found!")
-    camera = None
+    zwo_camera = None
+context.setContextProperty("zwoCamera", zwo_camera)
 
-frameGrabber = VideoFrameGrabber(app, camera)
+frameGrabber = VideoFrameGrabber()
 context.setContextProperty("frameGrabber", frameGrabber)
 
-cameraSettings = CameraSettings(app, camera)
+cameraSettings = CameraSettings(app, zwo_camera)
 context.setContextProperty("cameraSettings", cameraSettings)
 
 saveNameGenerator = SaveNameGenerator()
