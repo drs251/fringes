@@ -21,9 +21,10 @@ class ZwoSettings(DeviceSettings):
             self._info = camera.get_camera_property()
 
             # TODO check if exposure and gain have to be set default values and auto disabled
-            self._camera.set_control_value(asi.ASI_GAIN, 150)
-            self._camera.set_control_value(asi.ASI_EXPOSURE, 30000)
-            self._camera.set_control_value(asi.ASI_FLIP, 0)
+            self._camera.set_image_type(zwoasi.ASI_IMG_RAW16)
+            self._camera.set_control_value(zwoasi.ASI_GAIN, 150)
+            self._camera.set_control_value(zwoasi.ASI_EXPOSURE, 30000)
+            self._camera.set_control_value(zwoasi.ASI_FLIP, 0)
             self._camera.disable_dark_subtract()
             self._camera.set_control_value(zwoasi.ASI_COOLER_ON, 1)
             self._camera.set_control_value(zwoasi.ASI_TARGET_TEMP, self._controls["TargetTemp"]["MinValue"])

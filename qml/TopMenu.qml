@@ -61,8 +61,8 @@ Item {
                     onClicked: {
                         if(checked == true) {
                             camera_combo_box.enabled = false
-                            frameGrabber.setSourceFromDeviceId(zwoCamera)
-                            cameraSettings.setSourceFromDeviceId(zwoCamera)
+                            frameGrabber.setSource(zwoCamera)
+                            cameraSettings.setSource(zwoCamera)
                         }
                         else {
                             camera_combo_box.enabled = true
