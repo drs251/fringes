@@ -56,6 +56,17 @@ class ZwoCamera(QObject):
         super().__init__(parent)
         self._camera = None
 
+        # setup the camera
+        zwoasi.init("./zwoasi/libASICamera2.dylib")
+        num_cameras = zwoasi.get_num_cameras()
+
+        if num_cameras > 0:
+            print("{} ZWO camera(s) found.".format(num_cameras))
+            zwo_camera = zwoasi.Camera(0)
+        else:
+            print("No ZWO cameras found!")
+            zwo_camera = None
+
     def stop(self):
         pass
 

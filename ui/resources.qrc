@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>camera-slr-8x.png</file>
+    <file>circle-x-8x.png</file>
+    <file>collapse-down-4x.png</file>
+    <file>collapse-up-4x.png</file>
+    <file>pencil-8x.png</file>
+    <file>plus-8x.png</file>
+    <file>puzzle-piece-8x.png</file>
+  </qresource>
+</RCC>
