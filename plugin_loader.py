@@ -47,16 +47,17 @@ class PluginModel(QAbstractListModel):
         return len(self._plugins)
 
     def data(self, index: QModelIndex, role: int):
-        if index.row() < 0 or index.row() >= len(self._plugins):
+
+        if not index.isValid() or index.row() < 0 or index.row() >= len(self._plugins):
             return QVariant()
 
         plugin = self._plugins[index.row()]
-        if role == self.PluginRoles.NameRole.value:
-            return plugin.name
+        if role == self.PluginRoles.NameRole.value or role == Qt.DisplayRole:
+            return QVariant(plugin.name)
         elif role == self.PluginRoles.DescriptionRole.value:
-            return plugin.description
+            return QVariant(plugin.description)
         elif role == self.PluginRoles.ActiveRole.value:
-            return plugin.active
+            return QVariant(plugin.active)
 
         return QVariant()
 
@@ -74,13 +75,14 @@ class PluginModel(QAbstractListModel):
 
 class PluginLoader(QObject):
 
-    pluginsChanged = pyqtSignal()
-    imageAvailable = pyqtSignal(np.ndarray)
-    clipSizeChanged = pyqtSignal(QRectF)
+    plugins_changed = pyqtSignal()
+    ndarray_available = pyqtSignal(np.ndarray)
+    ndarray_bw_available = pyqtSignal(np.ndarray)
+    clipped_ndarray_available = pyqtSignal(np.ndarray)
+    clipped_ndarray_bw_available = pyqtSignal(np.ndarray)
 
-    def __init__(self, parent=None):
-
-        super().__init__(parent)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._plugin_folder = "plugins"
         self._plugins = PluginModel()
         self._probe = None
@@ -103,7 +105,7 @@ class PluginLoader(QObject):
                     plugin.init = plugin_import.init
                     plugin.show_window = plugin_import.show_window
                     plugin.init(None, lambda x, plugin=plugin: plugin.setActive(x))
-                    self.imageAvailable.connect(plugin.processImage)
+                    self.ndarray_bw_available.connect(plugin.processImage)
 
                     # if it was possible to import it, the plugin goes in the list:
                     self._plugins.addPlugin(plugin)
@@ -112,15 +114,12 @@ class PluginLoader(QObject):
                     print("Error importing plugin {}!\n".format(file), file=sys.stderr)
                     traceback.print_exc()
                     print()
-        self.pluginsChanged.emit()
+        self.plugins_changed.emit()
 
-    @pyqtProperty(type=QAbstractListModel, notify=pluginsChanged)
+    @pyqtProperty(type=QAbstractListModel, notify=plugins_changed)
     def plugins(self):
         return self._plugins
 
     @pyqtSlot(int, bool)
     def activatePlugin(self, index, active):
         self._plugins.getPlugins()[index].setActive(active)
-
-
-qmlRegisterType(PluginLoader, 'Plugins', 1, 0, 'PluginLoader')

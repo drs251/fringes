@@ -187,7 +187,7 @@ def find_blobs(transform, min_sigma=DEF_MIN_SIGMA, max_sigma=DEF_MAX_SIGMA, over
     else:
         transform_log = transform
 
-    threshold = transform_log.ptp() * threshold + transform_log.min()
+    threshold = transform_log.max() * threshold
 
     if method == 'log':
         method = blob_log

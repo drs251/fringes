@@ -24,7 +24,7 @@ class Ui_MainWindow(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.tab)
         self.verticalLayout.setContentsMargins(5, 5, 5, 0)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.graphicsView = PlotWidget(self.tab)
+        self.graphicsView = GraphicsLayoutWidget(self.tab)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(3)
@@ -121,32 +121,33 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.toolBar = QtWidgets.QToolBar(MainWindow)
+        self.toolBar.setMovable(False)
         self.toolBar.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.toolBar.setObjectName("toolBar")
         MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         self.actionChoose_camera = QtWidgets.QAction(MainWindow)
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(":/icons/camera-slr-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon2.addPixmap(QtGui.QPixmap(":/icons/ui/camera-slr-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionChoose_camera.setIcon(icon2)
         self.actionChoose_camera.setObjectName("actionChoose_camera")
         self.actionSave_image = QtWidgets.QAction(MainWindow)
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(":/icons/pencil-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon3.addPixmap(QtGui.QPixmap(":/icons/ui/pencil-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionSave_image.setIcon(icon3)
         self.actionSave_image.setObjectName("actionSave_image")
         self.actionManage_plugins = QtWidgets.QAction(MainWindow)
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(":/icons/puzzle-piece-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon4.addPixmap(QtGui.QPixmap(":/icons/ui/puzzle-piece-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionManage_plugins.setIcon(icon4)
         self.actionManage_plugins.setObjectName("actionManage_plugins")
         self.actionQuit = QtWidgets.QAction(MainWindow)
         icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap(":/icons/circle-x-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon5.addPixmap(QtGui.QPixmap(":/icons/ui/circle-x-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionQuit.setIcon(icon5)
         self.actionQuit.setObjectName("actionQuit")
         self.actionDraw_lines = QtWidgets.QAction(MainWindow)
         icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap(":/icons/plus-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon6.addPixmap(QtGui.QPixmap(":/icons/ui/plus-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionDraw_lines.setIcon(icon6)
         self.actionDraw_lines.setObjectName("actionDraw_lines")
         self.toolBar.addAction(self.actionChoose_camera)
@@ -182,8 +183,8 @@ class Ui_MainWindow(object):
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
         self.actionDraw_lines.setText(_translate("MainWindow", "Draw lines"))
 
-from pyqtgraph import PlotWidget
-import ui.resources_rc
+from pyqtgraph import GraphicsLayoutWidget
+import resources_rc
 
 if __name__ == "__main__":
     import sys

@@ -50,7 +50,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="PlotWidget" name="graphicsView">
+         <widget class="GraphicsLayoutWidget" name="graphicsView">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>0</horstretch>
@@ -233,6 +233,9 @@
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
    <property name="toolButtonStyle">
     <enum>Qt::ToolButtonTextUnderIcon</enum>
    </property>
@@ -250,8 +253,8 @@
   </widget>
   <action name="actionChoose_camera">
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/icons/camera-slr-8x.png</normaloff>:/icons/camera-slr-8x.png</iconset>
+    <iconset resource="../resources.qrc">
+     <normaloff>:/icons/ui/camera-slr-8x.png</normaloff>:/icons/ui/camera-slr-8x.png</iconset>
    </property>
    <property name="text">
     <string>Choose camera</string>
@@ -259,8 +262,8 @@
   </action>
   <action name="actionSave_image">
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/icons/pencil-8x.png</normaloff>:/icons/pencil-8x.png</iconset>
+    <iconset resource="../resources.qrc">
+     <normaloff>:/icons/ui/pencil-8x.png</normaloff>:/icons/ui/pencil-8x.png</iconset>
    </property>
    <property name="text">
     <string>Save image</string>
@@ -268,8 +271,8 @@
   </action>
   <action name="actionManage_plugins">
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/icons/puzzle-piece-8x.png</normaloff>:/icons/puzzle-piece-8x.png</iconset>
+    <iconset resource="../resources.qrc">
+     <normaloff>:/icons/ui/puzzle-piece-8x.png</normaloff>:/icons/ui/puzzle-piece-8x.png</iconset>
    </property>
    <property name="text">
     <string>Manage plugins</string>
@@ -277,8 +280,8 @@
   </action>
   <action name="actionQuit">
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/icons/circle-x-8x.png</normaloff>:/icons/circle-x-8x.png</iconset>
+    <iconset resource="../resources.qrc">
+     <normaloff>:/icons/ui/circle-x-8x.png</normaloff>:/icons/ui/circle-x-8x.png</iconset>
    </property>
    <property name="text">
     <string>Quit</string>
@@ -286,8 +289,8 @@
   </action>
   <action name="actionDraw_lines">
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/icons/plus-8x.png</normaloff>:/icons/plus-8x.png</iconset>
+    <iconset resource="../resources.qrc">
+     <normaloff>:/icons/ui/plus-8x.png</normaloff>:/icons/ui/plus-8x.png</iconset>
    </property>
    <property name="text">
     <string>Draw lines</string>
@@ -296,13 +299,13 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PlotWidget</class>
+   <class>GraphicsLayoutWidget</class>
    <extends>QGraphicsView</extends>
    <header>pyqtgraph</header>
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../resources.qrc"/>
  </resources>
  <connections>
   <connection>
