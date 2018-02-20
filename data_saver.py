@@ -34,7 +34,6 @@ class DataSaver(QObject):
                 qDebug("new name" + new_name)
                 return new_name
             else:
-                qDebug("returning empty name")
                 return ""
 
         @pyqtSlot(str)
@@ -52,14 +51,21 @@ class DataSaver(QObject):
     def save_array(self):
         self._image_to_save = self._last_image
 
+        qDebug("{}".format(self._image_to_save.shape))
+
         filename, _ = QFileDialog.getSaveFileName(caption="Save image", directory=self.name_generator.next_name,
-                                                  filter="netCDF file (*.netcdf)")
-        if not filename.endswith(".netcdf"):
-            filename += ".netcdf"
-        self.name_generator.set_prev_name(filename)
+                                                  filter="netCDF file (*.netcdf)",
+                                                  options=QFileDialog.DontUseNativeDialog)
 
         try:
-            xarr = xr.DataArray(self._image_to_save, dims=['x', 'y'])
+            if filename == "":
+                raise ValueError
+            if not filename.endswith(".netcdf"):
+                filename += ".netcdf"
+            self.name_generator.set_prev_name(filename)
+
+            xarr = xr.DataArray(self._image_to_save, dims=['y_pixels', 'x_pixels'], name="intensity")
+            xarr.attrs["units"] = "arb. u."
             xarr.encoding['zlib'] = True
             xarr.to_netcdf(path=filename)
         except ValueError:

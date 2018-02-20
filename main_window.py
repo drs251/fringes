@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import pyqtgraph as pg
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, qDebug
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout
@@ -16,12 +17,11 @@ class MainWindow(QMainWindow):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.image_plot = self.ui.graphicsView.addPlot()
-        self.image_plot.setAspectLocked()
-        self.image_plot.showAxis('bottom', False)
-        self.image_plot.showAxis('left', False)
+        box = self.ui.graphicsView.addViewBox(row=1, col=1, lockAspect=True, enableMouse=False)
         self.image_item = pg.ImageItem()
-        self.image_plot.addItem(self.image_item)
+        box.addItem(self.image_item)
+        self.ui.graphicsView.ci.layout.setContentsMargins(0, 0, 0, 0)
+        self.ui.graphicsView.ci.layout.setSpacing(0)
 
         self.data_handler = DataHandler()
         self.data_handler.ndarray_available.connect(self.show_ndarray)
@@ -36,16 +36,26 @@ class MainWindow(QMainWindow):
         self.plugin_dialog.set_plugins(self.data_handler.plugins)
         self.ui.actionManage_plugins.triggered.connect(self.plugin_dialog.exec_)
 
+        self.last_frame_time = time.time()
+        self.frame_interval = 0.1
+
     @pyqtSlot(np.ndarray)
     def show_ndarray(self, array):
-        self.image_item.setImage(array)
+        now = time.time()
+        if now - self.last_frame_time >= self.frame_interval:
+            self.last_frame_time = now
+            array = np.rot90(array, 3)
+            self.image_item.setImage(array)
 
     @pyqtSlot(QWidget)
     def set_camera_controls(self, controls):
-
         layout = QHBoxLayout()
         layout.addWidget(controls)
         self.ui.camSettingsWidget.setLayout(layout)
+
+    @pyqtSlot(int)
+    def set_saturation_percentage(self, value):
+        self.ui.progressBar.setValue(value)
 
     @pyqtSlot()
     def minimize_settings(self):

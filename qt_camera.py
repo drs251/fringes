@@ -77,8 +77,6 @@ class QtCamera(Camera):
                     # stored...
                     array = array[:, :, 0:3:][:, :, ::-1]
 
-                    array = np.rot90(array, 3)
-
                     self.ndarray_available.emit(array)
 
                     # see if new data is available, go to sleep if not
