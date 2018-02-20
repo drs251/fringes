@@ -1,5 +1,6 @@
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 import numpy as np
+from PyQt5.QtWidgets import QWidget
 
 
 class Camera(QObject):
@@ -27,8 +28,8 @@ class Camera(QObject):
     def _valid(self):
         return NotImplementedError()
 
-    def has_controls(self):
-        return NotImplementedError()
+    def get_controls(self):
+        return QWidget()
 
     @pyqtSlot()
     def start(self):

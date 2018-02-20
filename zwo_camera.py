@@ -2,9 +2,11 @@ from PyQt5.QtGui import QImage
 
 import zwoasi
 from PyQt5.QtMultimedia import QCamera, QVideoFrame
-from PyQt5.QtCore import QSize, QThread, QMutex, QWaitCondition, QMutexLocker, pyqtSignal
+from PyQt5.QtCore import QSize, QThread, QMutex, QWaitCondition, QMutexLocker, pyqtSignal, pyqtSlot, qDebug
 import numpy as np
+
 from camera import Camera
+from camera_settings_widget import CameraSettingsWidget
 
 
 # TODO: this should also provide a settings widget
@@ -17,6 +19,7 @@ class ZwoCamera(Camera):
         ndarray_available = pyqtSignal(np.ndarray)
 
         def __init__(self, camera: zwoasi.Camera):
+            super().__init__()
             self._camera = camera
             self._mutex = QMutex()
             self._abort = False
@@ -27,10 +30,12 @@ class ZwoCamera(Camera):
 
         def run(self):
             self._abort = False
+            self._camera.start_video_capture()
 
             while True:
                 with QMutexLocker(self._mutex):
                     if self._abort:
+                        self._camera.stop_video_capture()
                         break
 
                 data = self._camera.get_video_data()
@@ -47,6 +52,8 @@ class ZwoCamera(Camera):
                     raise ValueError('Unsupported image type')
                 img = img.reshape(shape)
 
+                img = np.rot90(img, 3)
+
                 self.ndarray_available.emit(img)
 
     # to convert the values from ZWO into nice units:
@@ -54,7 +61,7 @@ class ZwoCamera(Camera):
     _exposure_factor = 1000
 
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super().__init__()
         self._camera = None
         self._manualMode = False
         self._active = False
@@ -78,20 +85,42 @@ class ZwoCamera(Camera):
         if self._camera is not None:
             self._active = True
             self._manualMode = True
-            self._controls = camera.get_controls()
-            self._info = camera.get_camera_property()
+            self._controls = self._camera.get_controls()
+            self._info = self._camera.get_camera_property()
 
             # TODO check if exposure and gain have to be set default values and auto disabled
             self._camera.set_image_type(zwoasi.ASI_IMG_RAW16)
-            self._camera.set_control_value(zwoasi.ASI_GAIN, 150)
-            self._camera.set_control_value(zwoasi.ASI_EXPOSURE, 30000)
+            self._camera.set_control_value(zwoasi.ASI_GAIN, 20)
+            self._camera.set_control_value(zwoasi.ASI_EXPOSURE, 3000)
             self._camera.set_control_value(zwoasi.ASI_FLIP, 0)
             self._camera.disable_dark_subtract()
             self._camera.set_control_value(zwoasi.ASI_COOLER_ON, 1)
             self._camera.set_control_value(zwoasi.ASI_TARGET_TEMP, self._controls["TargetTemp"]["MinValue"])
 
+
         self.capture_thread = self.CaptureThread(self._camera)
         self.capture_thread.ndarray_available.connect(self.ndarray_available)
+
+    @pyqtSlot()
+    def start(self):
+        self.capture_thread.start()
+
+    @pyqtSlot()
+    def stop(self):
+        self.capture_thread.stop()
+
+    @pyqtSlot()
+    def get_controls(self):
+        controls = CameraSettingsWidget()
+        min_exp, max_exp = self.get_exposure_range()
+        max_exp = min(max_exp, 2000)
+        controls.set_exposure_range(min_exp, max_exp)
+        controls.set_gain_range(*self.get_gain_range())
+        controls.set_gain(self.get_gain())
+        controls.set_exposure(self.get_exposure())
+        controls.exposure_changed.connect(self.set_exposure)
+        controls.gain_changed.connect(self.set_gain)
+        return controls
 
     @staticmethod
     def get_number_camera():
@@ -131,13 +160,15 @@ class ZwoCamera(Camera):
         current_exposure = self._camera.get_control_value(zwoasi.ASI_EXPOSURE)[0]
         self._camera.set_control_value(zwoasi.ASI_EXPOSURE, current_exposure, auto=auto)
 
-    @Camera._ensure_valid
+    #@Camera._ensure_valid
     def set_exposure(self, exposure):
         exposure = int(exposure * self._exposure_factor)
         rng = (self._controls["Exposure"]["MinValue"], self._controls["Exposure"]["MaxValue"])
         if not rng[0] <= exposure <= rng[1]:
             raise ValueError("Exposure parameter {} is outside of allowed range {}".format(exposure, rng))
         self._camera.set_control_value(zwoasi.ASI_EXPOSURE, exposure)
+
+        qDebug("ZwoCamera: exposure set to {}".format(self.get_exposure()))
 
     @Camera._ensure_valid
     def get_gain(self):
@@ -165,3 +196,5 @@ class ZwoCamera(Camera):
         if not rng[0] <= gain <= rng[1]:
             raise ValueError("Gain parameter {} is outside of allowed range {}".format(gain, rng))
         self._camera.set_control_value(zwoasi.ASI_GAIN, gain)
+
+        qDebug("ZwoCamera: gain set to {}".format(self.get_gain()))

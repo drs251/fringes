@@ -1,7 +1,7 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtCore import pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, qDebug
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout
 
 from ui.main_window import Ui_MainWindow
 from camera_dialog import CameraDialog
@@ -25,6 +25,8 @@ class MainWindow(QMainWindow):
 
         self.data_handler = DataHandler()
         self.data_handler.ndarray_available.connect(self.show_ndarray)
+        self.data_handler.camera_controls_changed.connect(self.set_camera_controls)
+        self.ui.actionSave_image.triggered.connect(self.data_handler.save_file)
 
         self.camera_dialog = CameraDialog()
         self.ui.actionChoose_camera.triggered.connect(self.camera_dialog.choose_camera)
@@ -37,3 +39,18 @@ class MainWindow(QMainWindow):
     @pyqtSlot(np.ndarray)
     def show_ndarray(self, array):
         self.image_item.setImage(array)
+
+    @pyqtSlot(QWidget)
+    def set_camera_controls(self, controls):
+
+        layout = QHBoxLayout()
+        layout.addWidget(controls)
+        self.ui.camSettingsWidget.setLayout(layout)
+
+    @pyqtSlot()
+    def minimize_settings(self):
+        pass
+
+    @pyqtSlot()
+    def expand_settings(self):
+        pass

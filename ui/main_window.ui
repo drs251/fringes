@@ -168,7 +168,7 @@
               </property>
               <property name="icon">
                <iconset>
-                <normalon>:/icons/collapse-down-4x.png</normalon>
+                <normalon>:/icons/ui/collapse-down-4x.png</normalon>
                </iconset>
               </property>
              </widget>
@@ -213,7 +213,7 @@
               </property>
               <property name="icon">
                <iconset>
-                <normalon>:/icons/collapse-up-4x.png</normalon>
+                <normalon>:/icons/ui/collapse-up-4x.png</normalon>
                </iconset>
               </property>
              </widget>

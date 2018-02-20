@@ -49,6 +49,7 @@ class CameraDialog(QDialog):
                 if index == 0:
                     new_camera = ZwoCamera()
                 else:
-                    new_camera = QtCamera(self._qcameras[index + 1])
-            new_camera = QtCamera(self._qcameras[index])
+                    new_camera = QtCamera(self._qcameras[index - 1])
+            else:
+                new_camera = QtCamera(self._qcameras[index])
             self.camera_changed.emit(new_camera)
