@@ -27,7 +27,7 @@ class CameraDialog(QDialog):
         self._current_camera = None
 
         names = []
-        if ZwoCamera.get_number_camera() > 0:
+        if ZwoCamera.get_number_cameras() > 0:
             names.append("ZWO camera")
             self._zwo_camera = True
         else:

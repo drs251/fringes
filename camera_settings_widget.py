@@ -94,6 +94,7 @@ class CameraSettingsWidget(QWidget):
 
         self.auto_checkbox = QCheckBox("auto")
         self.auto_checkbox.toggled.connect(self.auto_changed)
+        self.auto_checkbox.toggled.connect(self.disable_controls)
 
         layout = QGridLayout()
         layout.addWidget(self.exposure_widget, 0, 0)
@@ -126,4 +127,9 @@ class CameraSettingsWidget(QWidget):
     @pyqtSlot(float, float)
     def set_gain_range(self, min_gain, max_gain):
         self.gain_widget.set_range(min_gain, max_gain)
+
+    @pyqtSlot(bool)
+    def disable_controls(self, disable):
+        self.gain_widget.setEnabled(not disable)
+        self.exposure_widget.setEnabled(not disable)
 

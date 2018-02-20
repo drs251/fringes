@@ -126,6 +126,8 @@ class QtCamera(Camera):
         if error != QCamera.NoError:
             qDebug("Camera error: ", error)
 
+        self.maxval = 2**8
+
     def _valid(self):
         return True
 

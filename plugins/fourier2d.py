@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-import plugin_canvas_pyqtgraph
+import plugin_canvas
 import plugins.libs.vortex_tools_core as vtc
 
 
@@ -182,7 +182,7 @@ class FFTPlugin2(QObject):
         self.parent = parent
         self.send_data = send_data_function
 
-        self.canvas = plugin_canvas_pyqtgraph.PluginCanvasPyqtgraph(parent, send_data_function)
+        self.canvas = plugin_canvas.PluginCanvas(parent, send_data_function)
         self.canvas.set_name(name)
         self.canvas.resize(900, 600)
         self.layoutWidget = self.canvas.layoutWidget

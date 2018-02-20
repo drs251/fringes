@@ -4,7 +4,7 @@ import pyqtgraph as pg
 import numpy as np
 import matplotlib.pyplot as plt
 
-import plugin_canvas_pyqtgraph
+import plugin_canvas
 import plugins.libs.vortex_tools_core as vtc
 
 name = "Interferogram viewer"
@@ -85,7 +85,7 @@ class PolarizationPlugin(QObject):
         self.parent = parent
         self.send_data = send_data_function
 
-        self.canvas = plugin_canvas_pyqtgraph.PluginCanvasPyqtgraph(parent, send_data_function)
+        self.canvas = plugin_canvas.PluginCanvas(parent, send_data_function)
         self.canvas.set_name(name)
         self.layoutWidget = self.canvas.layoutWidget
         self.canvas.resize(350, 400)

@@ -21,6 +21,7 @@ class Camera(QObject):
         super().__init__()
         self._manualMode = False
         self._active = False
+        self.maxval = None
 
     def _clear_interface(self):
         return NotImplementedError()
@@ -30,6 +31,9 @@ class Camera(QObject):
 
     def get_controls(self):
         return QWidget()
+
+    def has_controls(self):
+        return False
 
     @pyqtSlot()
     def start(self):

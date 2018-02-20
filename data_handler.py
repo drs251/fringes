@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 from PyQt5.QtCore import pyqtSlot, QObject, pyqtSignal, QRectF, qDebug
 from PyQt5.QtWidgets import QWidget
@@ -16,6 +17,8 @@ class DataHandler(QObject):
     clipped_ndarray_bw_available = pyqtSignal(np.ndarray)
     camera_controls_changed = pyqtSignal(QWidget)
     save_file = pyqtSignal()
+    enable_saturation_widget = pyqtSignal(bool)
+    saturation_changed = pyqtSignal(int)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -38,16 +41,38 @@ class DataHandler(QObject):
         self.ndarray_bw_available.connect(self.data_saver.set_array)
         self.save_file.connect(self.data_saver.save_array)
 
+        # this limits the global frame rate in this program:
+        self.last_frame_time = time.time()
+        self.frame_interval = 0.2
+
     @pyqtSlot(Camera)
     def change_camera(self, camera):
         if self.camera is not None:
             self.camera.stop()
-            # TODO: fix this disconnect statement
+            # TODO: fix these disconnect statements
             self.camera.disconnect(self.ndarray_available)
+            if camera.has_controls():
+                try:
+                    self.camera.saturation_changed.connect(self.saturation_changed)
+                except:
+                    pass
         self.camera = camera
-        self.camera.ndarray_available.connect(self.ndarray_available)
+        self.camera.ndarray_available.connect(self.process_new_array)
         self.camera_controls_changed.emit(camera.get_controls())
+        self.enable_saturation_widget.emit(camera.has_controls())
+        if camera.has_controls():
+            try:
+                self.camera.saturation_changed.connect(self.saturation_changed)
+            except:
+                pass
         self.camera.start()
+
+    @pyqtSlot(np.ndarray)
+    def process_new_array(self, array: np.ndarray):
+        now = time.time()
+        if now - self.last_frame_time >= self.frame_interval:
+            self.last_frame_time = now
+            self.ndarray_available.emit(array)
 
     @pyqtSlot(np.ndarray)
     def convert_to_grayscale(self, array: np.ndarray):

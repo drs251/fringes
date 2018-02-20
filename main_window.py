@@ -27,6 +27,8 @@ class MainWindow(QMainWindow):
         self.data_handler.ndarray_available.connect(self.show_ndarray)
         self.data_handler.camera_controls_changed.connect(self.set_camera_controls)
         self.ui.actionSave_image.triggered.connect(self.data_handler.save_file)
+        self.data_handler.enable_saturation_widget.connect(self.ui.progressBar.setEnabled)
+        self.data_handler.saturation_changed.connect(self.ui.progressBar.setValue)
 
         self.camera_dialog = CameraDialog()
         self.ui.actionChoose_camera.triggered.connect(self.camera_dialog.choose_camera)
@@ -36,16 +38,12 @@ class MainWindow(QMainWindow):
         self.plugin_dialog.set_plugins(self.data_handler.plugins)
         self.ui.actionManage_plugins.triggered.connect(self.plugin_dialog.exec_)
 
-        self.last_frame_time = time.time()
-        self.frame_interval = 0.1
+        self.ui.actionShow_Settings.toggled.connect(self.show_settings)
 
     @pyqtSlot(np.ndarray)
     def show_ndarray(self, array):
-        now = time.time()
-        if now - self.last_frame_time >= self.frame_interval:
-            self.last_frame_time = now
-            array = np.rot90(array, 3)
-            self.image_item.setImage(array)
+        array = np.rot90(array, 3)
+        self.image_item.setImage(array)
 
     @pyqtSlot(QWidget)
     def set_camera_controls(self, controls):
@@ -57,10 +55,10 @@ class MainWindow(QMainWindow):
     def set_saturation_percentage(self, value):
         self.ui.progressBar.setValue(value)
 
-    @pyqtSlot()
-    def minimize_settings(self):
-        pass
+    @pyqtSlot(bool)
+    def show_settings(self, show):
+        self.ui.bottom_settings_widget.setVisible(show)
 
-    @pyqtSlot()
-    def expand_settings(self):
-        pass
+    @pyqtSlot(QWidget, str)
+    def add_plugin(self, widget: QWidget, name: str):
+        self.ui.tabWidget.addTab(widget, name)

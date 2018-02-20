@@ -56,15 +56,69 @@ class ZwoCamera(Camera):
 
                 self.ndarray_available.emit(img)
 
+    class AutoSettingsThread(QThread):
+        gain_changed = pyqtSignal(float)
+        saturation_changed = pyqtSignal(float)
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self._mutex = QMutex()
+            self._saturation = 0
+            self._abort = False
+            self._piUi = 0
+
+        @pyqtSlot(int)
+        def set_saturation(self, sat):
+            self._saturation = 0
+
+        def stop(self):
+            with QMutexLocker(self._mutex):
+                self._abort = True
+
+        def run(self):
+            # TODO: adapt this
+            if self.manualMode or not self.active:
+                return
+
+            # a simple PI controller:
+            setpoint = 85.
+            Kp = 25
+            Ti = 0.3
+
+            error = self._saturation - setpoint
+            ui = self._piUi + error * self._autoSaturationInterval / 1000 * Ti
+            self._piUi = ui
+            output = - Kp * (error + ui)
+
+            if (error > 0 and self.minGain < self.gain) or (error < 0 and self.gain < self.maxGain):
+                # adjust gain
+                db_increase = output / 5
+                self.gain = clamp(self.gain + db_increase, self.minGain, self.maxGain)
+            elif (error > 0 and self.minExposure < self.exposureTime) or \
+                    (error < 0 and self.exposureTime < self.maxExposure):
+                self.exposureTime = clamp(self.exposureTime + output, self.minExposure, self.maxExposure)
+            else:
+                # stuck at the edge...
+                self._piUi = 0
+
     # to convert the values from ZWO into nice units:
     _gain_factor = 10
     _exposure_factor = 1000
+
+    exposure_time_changed = pyqtSignal(float)
+    gain_changed = pyqtSignal(float)
+    saturation_changed = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__()
         self._camera = None
         self._manualMode = False
         self._active = False
+
+        self.maxval = 2**16
+
+        self._last_saturations = []
+        self._saturation = 0
 
         try:
             zwoasi.init(self.ZWOLIB_PATH)
@@ -81,7 +135,6 @@ class ZwoCamera(Camera):
             zwo_camera = None
             raise RuntimeError("No ZWO cameras found")
 
-
         if self._camera is not None:
             self._active = True
             self._manualMode = True
@@ -97,9 +150,11 @@ class ZwoCamera(Camera):
             self._camera.set_control_value(zwoasi.ASI_COOLER_ON, 1)
             self._camera.set_control_value(zwoasi.ASI_TARGET_TEMP, self._controls["TargetTemp"]["MinValue"])
 
-
         self.capture_thread = self.CaptureThread(self._camera)
         self.capture_thread.ndarray_available.connect(self.ndarray_available)
+
+        self.auto_settings_thread = self.AutoSettingsThread()
+        self.saturation_changed.connect(self.auto_settings_thread.set_saturation)
 
     @pyqtSlot()
     def start(self):
@@ -108,6 +163,16 @@ class ZwoCamera(Camera):
     @pyqtSlot()
     def stop(self):
         self.capture_thread.stop()
+
+    @pyqtSlot(np.ndarray)
+    def calculate_saturation(self, array):
+        sat = array.max() / self.maxval * 100
+        self._last_saturations.append(sat)
+        if len(self._last_saturations) > 10:
+            self._last_saturations.pop(0)
+        weight = np.arange(1, len(self._last_saturations) + 1)
+        self._saturation = np.sum(weight * np.array(self._last_saturations)) / np.sum(weight)
+        self.saturationChanged.emit(self._saturation)
 
     @pyqtSlot()
     def get_controls(self):
@@ -120,10 +185,24 @@ class ZwoCamera(Camera):
         controls.set_exposure(self.get_exposure())
         controls.exposure_changed.connect(self.set_exposure)
         controls.gain_changed.connect(self.set_gain)
+        controls.auto_changed.connect(self.enable_auto)
+        self.exposure_time_changed.connect(controls.set_exposure)
+        self.gain_changed.connect(controls.set_gain)
         return controls
 
+    @pyqtSlot()
+    def has_controls(self):
+        return True
+
+    @pyqtSlot(bool)
+    def enable_auto(self, auto):
+        if auto:
+            self.auto_settings_thread.start()
+        else:
+            self.auto_settings_thread.stop()
+
     @staticmethod
-    def get_number_camera():
+    def get_number_cameras():
         try:
             zwoasi.init(ZwoCamera.ZWOLIB_PATH)
         except zwoasi.ZWO_Error:
@@ -160,15 +239,14 @@ class ZwoCamera(Camera):
         current_exposure = self._camera.get_control_value(zwoasi.ASI_EXPOSURE)[0]
         self._camera.set_control_value(zwoasi.ASI_EXPOSURE, current_exposure, auto=auto)
 
-    #@Camera._ensure_valid
+    @Camera._ensure_valid
     def set_exposure(self, exposure):
-        exposure = int(exposure * self._exposure_factor)
+        true_exposure = int(exposure * self._exposure_factor)
         rng = (self._controls["Exposure"]["MinValue"], self._controls["Exposure"]["MaxValue"])
-        if not rng[0] <= exposure <= rng[1]:
-            raise ValueError("Exposure parameter {} is outside of allowed range {}".format(exposure, rng))
-        self._camera.set_control_value(zwoasi.ASI_EXPOSURE, exposure)
-
-        qDebug("ZwoCamera: exposure set to {}".format(self.get_exposure()))
+        if not rng[0] <= true_exposure <= rng[1]:
+            raise ValueError("Exposure parameter {} is outside of allowed range {}".format(true_exposure, rng))
+        self._camera.set_control_value(zwoasi.ASI_EXPOSURE, true_exposure)
+        self.exposure_time_changed.emit(exposure)
 
     @Camera._ensure_valid
     def get_gain(self):
@@ -191,10 +269,9 @@ class ZwoCamera(Camera):
 
     @Camera._ensure_valid
     def set_gain(self, gain):
-        gain = int(gain * self._gain_factor)
+        true_gain = int(gain * self._gain_factor)
         rng = (self._controls["Gain"]["MinValue"], self._controls["Gain"]["MaxValue"])
-        if not rng[0] <= gain <= rng[1]:
-            raise ValueError("Gain parameter {} is outside of allowed range {}".format(gain, rng))
-        self._camera.set_control_value(zwoasi.ASI_GAIN, gain)
-
-        qDebug("ZwoCamera: gain set to {}".format(self.get_gain()))
+        if not rng[0] <= true_gain <= rng[1]:
+            raise ValueError("Gain parameter {} is outside of allowed range {}".format(true_gain, rng))
+        self._camera.set_control_value(zwoasi.ASI_GAIN, true_gain)
+        self.gain_changed.emit(gain)
