@@ -52,7 +52,7 @@ class ZwoCamera(Camera):
                     raise ValueError('Unsupported image type')
                 img = img.reshape(shape)
 
-                img = np.rot90(img, 3)
+                img = np.rot90(img, 2)
 
                 self.ndarray_available.emit(img)
 
@@ -77,8 +77,12 @@ class ZwoCamera(Camera):
 
         def run(self):
             # TODO: adapt this
-            if self.manualMode or not self.active:
-                return
+            return
+
+            while True:
+                with QMutexLocker(self._mutex):
+                    if self._abort:
+                        break
 
             # a simple PI controller:
             setpoint = 85.
@@ -152,6 +156,7 @@ class ZwoCamera(Camera):
 
         self.capture_thread = self.CaptureThread(self._camera)
         self.capture_thread.ndarray_available.connect(self.ndarray_available)
+        self.ndarray_available.connect(self.calculate_saturation)
 
         self.auto_settings_thread = self.AutoSettingsThread()
         self.saturation_changed.connect(self.auto_settings_thread.set_saturation)
@@ -172,7 +177,7 @@ class ZwoCamera(Camera):
             self._last_saturations.pop(0)
         weight = np.arange(1, len(self._last_saturations) + 1)
         self._saturation = np.sum(weight * np.array(self._last_saturations)) / np.sum(weight)
-        self.saturationChanged.emit(self._saturation)
+        self.saturation_changed.emit(self._saturation)
 
     @pyqtSlot()
     def get_controls(self):

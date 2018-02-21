@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QThread, QObject, pyqtSignal, qDebug, QMutex, QWaitCondition
+from PyQt5.QtCore import QThread, QObject, pyqtSignal, qDebug, QMutex, QWaitCondition, pyqtSlot
 from PyQt5.QtWidgets import QHBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QWidget, QComboBox, QLabel, QCheckBox, \
     QVBoxLayout
 import pyqtgraph as pg
@@ -8,11 +8,7 @@ import sys
 
 import plugin_canvas
 import plugins.libs.vortex_tools_core as vtc
-
-
-name = "Fourier Transform"
-description = "2D Fourier transformation with pyqtgraph"
-
+from plugin import Plugin
 
 def generatePgColormap(cm_name):
     pltMap = plt.get_cmap(cm_name)
@@ -83,8 +79,8 @@ class FFTWorker(QThread):
             invWindow = parameters["invWindow"]
 
             # convert frame to grayscale and rotate to give the correction orientation
-            data = frame.sum(axis=2).astype(np.float64)
-            data = np.rot90(data, axes=(1,0))
+            # data = frame.sum(axis=2).astype(np.float64)
+            data = np.rot90(frame, axes=(1,0))
 
             if homogenize:
                 data = vtc.homogenize(data, homogenize_value, homogenize_blur)
@@ -171,25 +167,23 @@ class FFTWorker(QThread):
         return phase
 
 
-class FFTPlugin2(QObject):
+class FFTPlugin2(Plugin):
 
     frameAvailable = pyqtSignal(np.ndarray, dict)
 
-    def __init__(self, parent, send_data_function):
-        super().__init__(parent)
+    def __init__(self, parent, name):
+        super().__init__(name)
         self.parameter_boxes = {}
 
         self.parent = parent
-        self.send_data = send_data_function
 
-        self.canvas = plugin_canvas.PluginCanvas(parent, send_data_function)
+        self.canvas = plugin_canvas.PluginCanvas()
         self.canvas.set_name(name)
         self.canvas.resize(900, 600)
         self.layoutWidget = self.canvas.layoutWidget
 
         # make fields to enter parameters:
         self.canvas.param_layout = QHBoxLayout()
-        #self.canvas.parameter_boxes = {}
         self.parameter_boxes["auto"] = QCheckBox("auto")
         for param in ["min_sigma", "max_sigma", "overlap", "threshold"]:
             if param == "min_sigma" or param == "max_sigma":
@@ -370,7 +364,8 @@ class FFTPlugin2(QObject):
         self.blob_boxes["y"].setValue(y)
         self.blob_boxes["r"].setValue(r)
 
-    def process_frame(self, frame: np.ndarray):
+    @pyqtSlot(np.ndarray)
+    def process_clipped_ndarray_bw(self, array: np.ndarray):
         parameters = {'min_sigma': self.parameter_boxes["min_sigma"].value(),
                       'max_sigma': self.parameter_boxes["max_sigma"].value(),
                       'overlap': self.parameter_boxes["overlap"].value(),
@@ -388,34 +383,11 @@ class FFTPlugin2(QObject):
                       'homogenize_value': self.blob_boxes["homogenize_value"].value(),
                       'homogenize_blur': self.blob_boxes["homogenize_blur"].value()
                       }
-        self.frameAvailable.emit(frame, parameters)
+        self.frameAvailable.emit(array, parameters)
+
+    def get_widget(self):
+        return self.canvas
 
 
-plugin = None
-
-
-def init(parent=None, send_data_function=None):
-    """
-    Initialize the plugin. Build the window and create any necessary variables
-    :param parent: The main window can be provided here
-    :param send_data_function: A function that can start or stop data being sent
-    """
-    global plugin
-    plugin = FFTPlugin2(parent, send_data_function)
-
-
-def process_frame(frame: np.ndarray):
-    """
-    Process a numpy array: take the data and convert it into a plot
-    :param frame: a numpy array
-    """
-    plugin.process_frame(frame)
-
-
-
-def show_window(show: bool = True):
-    """
-    Show or hide the plugin window
-    :param show: True or False
-    """
-    plugin.canvas.show_canvas(show)
+def get_instance(parent:QObject=None):
+    return FFTPlugin2(parent=parent, name="Phase Extraction")

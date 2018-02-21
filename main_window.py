@@ -24,11 +24,14 @@ class MainWindow(QMainWindow):
         self.ui.graphicsView.ci.layout.setSpacing(0)
 
         self.data_handler = DataHandler()
+        for plugin in self.data_handler.plugins:
+            self.add_plugin(plugin.get_widget(), plugin.name)
         self.data_handler.ndarray_available.connect(self.show_ndarray)
         self.data_handler.camera_controls_changed.connect(self.set_camera_controls)
         self.ui.actionSave_image.triggered.connect(self.data_handler.save_file)
         self.data_handler.enable_saturation_widget.connect(self.ui.progressBar.setEnabled)
         self.data_handler.saturation_changed.connect(self.ui.progressBar.setValue)
+        self.data_handler.message.connect(self.show_message)
 
         self.camera_dialog = CameraDialog()
         self.ui.actionChoose_camera.triggered.connect(self.camera_dialog.choose_camera)
@@ -62,3 +65,7 @@ class MainWindow(QMainWindow):
     @pyqtSlot(QWidget, str)
     def add_plugin(self, widget: QWidget, name: str):
         self.ui.tabWidget.addTab(widget, name)
+
+    @pyqtSlot(str)
+    def show_message(self, message):
+        self.ui.statusbar.showMessage(message, 5000)

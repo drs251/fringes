@@ -30,7 +30,9 @@ class CameraSettingsWidget(QWidget):
             self._spinbox.setDecimals(1)
             self._spinbox.setKeyboardTracking(False)
             self._spinbox.valueChanged.connect(self.set_value)
+            self._spinbox.setMinimumWidth(80)
             self.label = QLabel()
+            self.label.setMinimumWidth(120)
 
             layout = QHBoxLayout()
             layout.addWidget(self._slider)
@@ -98,8 +100,8 @@ class CameraSettingsWidget(QWidget):
 
         layout = QGridLayout()
         layout.addWidget(self.exposure_widget, 0, 0)
-        layout.addWidget(self.gain_widget, 0, 1)
-        layout.addWidget(self.auto_checkbox, 1, 0, 1, 0)
+        layout.addWidget(self.gain_widget, 1, 0)
+        layout.addWidget(self.auto_checkbox, 0, 1, 0, 1)
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
 

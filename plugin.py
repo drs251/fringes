@@ -4,55 +4,46 @@ import traceback
 import numpy as np
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
 from PyQt5.QtQml import qmlRegisterType
+from PyQt5.QtWidgets import QWidget
 
 
 class Plugin(QObject):
 
-    activeChanged = pyqtSignal()
+    message = pyqtProperty(str)
 
-    def __init__(self, newName, newDescription):
+    def __init__(self, name):
 
-        super().__init__(None)
+        super().__init__()
 
-        self._name = newName
-        self._description = newDescription
+        self._name = name
         self.process_frame = None
         self.init = None
         self.show_window = None
         self._active = False
+
+    def get_widget(self):
+        return QWidget()
 
     def getName(self):
         return self._name
 
     name = pyqtProperty('QString', fget=getName, constant=True)
 
-    def getDescription(self):
-        return self._description
-
-    description = pyqtProperty('QString', fget=getDescription, constant=True)
-
-    def getActive(self):
-        return self._active
-
-    def setActive(self, newActive):
-        if newActive is not self._active or True:
-            self._active = newActive
-            if self._active:
-                self.show_window()
-            self.activeChanged.emit()
-
-    active = pyqtProperty(bool, fget=getActive, fset=setActive, notify=activeChanged)
+    @pyqtSlot(np.ndarray)
+    def process_ndarray(self, array: np.ndarray):
+        pass
 
     @pyqtSlot(np.ndarray)
-    def processImage(self, array: np.ndarray):
-        if self._active:
+    def process_ndarray_bw(self, array: np.ndarray):
+        pass
 
-            try:
-                self.process_frame(array)
-            except Exception:
-                print("Error running plugin {}!\n".format(self._name), file=sys.stderr)
-                traceback.print_exc()
-                print()
+    @pyqtSlot(np.ndarray)
+    def process_clipped_ndarray(self, array: np.ndarray):
+        pass
+
+    @pyqtSlot(np.ndarray)
+    def process_clipped_ndarray_bw(self, array: np.ndarray):
+        pass
 
 
 qmlRegisterType(Plugin, 'Plugins', 1, 0, 'Plugin')

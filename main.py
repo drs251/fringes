@@ -26,6 +26,8 @@ dark_palette.setColor(QPalette.BrightText, Qt.red)
 dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
 dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
 dark_palette.setColor(QPalette.HighlightedText, Qt.black)
+dark_palette.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
+dark_palette.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
 
 app.setPalette(dark_palette)
 

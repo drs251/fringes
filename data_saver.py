@@ -40,6 +40,8 @@ class DataSaver(QObject):
         def set_prev_name(self, name):
             self._prev_name = name
 
+    message = pyqtSignal(str)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -68,8 +70,9 @@ class DataSaver(QObject):
             xarr.attrs["units"] = "arb. u."
             xarr.encoding['zlib'] = True
             xarr.to_netcdf(path=filename)
+            self.message.emit("{} successfully saved.".format(filename))
         except ValueError:
-            qDebug("Image not saved")
+            self.message.emit("Image not saved")
 
 
     @pyqtSlot(np.ndarray)

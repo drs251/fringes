@@ -19,6 +19,7 @@ class DataHandler(QObject):
     save_file = pyqtSignal()
     enable_saturation_widget = pyqtSignal(bool)
     saturation_changed = pyqtSignal(int)
+    message = pyqtSignal(str)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -32,6 +33,8 @@ class DataHandler(QObject):
 
         self.plugin_loader = PluginLoader()
         self.plugins = self.plugin_loader.plugins
+        for plugin in self.plugins:
+            plugin.message.connect(self.message)
         self.ndarray_available.connect(self.plugin_loader.ndarray_available)
         self.ndarray_bw_available.connect(self.plugin_loader.ndarray_bw_available)
         self.clipped_ndarray_available.connect(self.plugin_loader.clipped_ndarray_available)
