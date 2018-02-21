@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 import re
+import os
 
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot, qDebug
 from PyQt5.QtWidgets import QFileDialog
@@ -53,8 +54,6 @@ class DataSaver(QObject):
     def save_array(self):
         self._image_to_save = self._last_image
 
-        qDebug("{}".format(self._image_to_save.shape))
-
         filename, _ = QFileDialog.getSaveFileName(caption="Save image", directory=self.name_generator.next_name,
                                                   filter="netCDF file (*.netcdf)",
                                                   options=QFileDialog.DontUseNativeDialog)
@@ -66,9 +65,9 @@ class DataSaver(QObject):
                 filename += ".netcdf"
             self.name_generator.set_prev_name(filename)
 
-            xarr = xr.DataArray(self._image_to_save, dims=['y_pixels', 'x_pixels'], name="intensity")
-            xarr.attrs["units"] = "arb. u."
-            xarr.encoding['zlib'] = True
+            xarr = xarray_from_frame(self._image_to_save)
+            if os.path.isfile(filename):
+                os.remove(filename)
             xarr.to_netcdf(path=filename)
             self.message.emit("{} successfully saved.".format(filename))
         except ValueError:
@@ -78,3 +77,13 @@ class DataSaver(QObject):
     @pyqtSlot(np.ndarray)
     def set_array(self, array):
         self._last_image = array
+
+
+def xarray_from_frame(frame):
+    y_len, x_len = frame.shape
+    x_coords = np.arange(x_len)
+    y_coords = np.arange(y_len)[::-1]
+    xarr = xr.DataArray(frame, coords=[('y_pixels', y_coords), ('x_pixels', x_coords)], name="intensity")
+    xarr.attrs["units"] = "arb. u."
+    xarr.encoding['zlib'] = True
+    return xarr

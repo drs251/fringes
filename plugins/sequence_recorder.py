@@ -3,229 +3,241 @@ import os
 import queue
 import re
 import time
+import xarray as xr
 
 import numpy as np
-from PyQt5.QtCore import QThread, QObject, pyqtSignal, QMutex, QWaitCondition, QDir, QTimer
+from PyQt5.QtCore import QThread, QObject, pyqtSignal, QMutex, QWaitCondition, QDir, QTimer, pyqtSlot
 from PyQt5.QtWidgets import QHBoxLayout, QGroupBox, QLabel, QPushButton, QFileDialog, QMessageBox, \
-    QDoubleSpinBox
+    QDoubleSpinBox, QVBoxLayout, QSpinBox
 from scipy.misc import imsave
 
 import plugin_canvas
+from data_saver import xarray_from_frame
+from plugin import Plugin
+
 
 name = "Sequence recorder"
 description = "Saves a sequence of images"
 
 
 # this does the calculations in another thread:
-class RecorderThread(QThread):
+class RecorderWorker(QObject):
 
     imagesRecorded = pyqtSignal(int)
-    imagesSaved = pyqtSignal(int)
+    imagesSaved = pyqtSignal(str)
+    message = pyqtSignal(str)
+    finished = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._mutex = QMutex()
-        self._condition = QWaitCondition()
-        self.frameQueue = queue.Queue()
         self.parameters = None
         self.abort = False
-        self._images_saved = 0
+        self._total_images = 0
         self._images_recorded = 0
         self._recording = False
-        self._folder = "/home"
+        self._filename = "/home"
         self._rate = None
         self._nextFrameTime = None
+        self._arrays = []
 
     def processFrame(self, frame):
         if self._recording and time.time() >= self._nextFrameTime:
-            self._mutex.lock()
-            self.frameQueue.put(frame)
+            xarr = xarray_from_frame(frame)
+            xarr = xarr.expand_dims("sequence_number")
+            xarr.coords["sequence_number"] = [self._images_recorded]
+            self._arrays.append(xarr)
             self._images_recorded += 1
             self.imagesRecorded.emit(self._images_recorded)
-            self._nextFrameTime += 1 / self._rate
-            self._mutex.unlock()
-
-            if not self.isRunning():
-                self.start()
+            if self._images_recorded >= self._total_images:
+                self.stopRecording()
             else:
-                self._condition.wakeOne()
+                self._nextFrameTime += 1 / self._rate
 
-    def run(self):
-        while not self.abort:
-            # copy new frame and parameters:
-            self._mutex.lock()
-            frame = self.frameQueue.get()
-            folder = self._folder
-            self._mutex.unlock()
+    def saveArrays(self):
+        try:
+            arrays = xr.concat(self._arrays, "sequence_number")
+            arrays.encoding['zlib'] = True
+            if os.path.isfile(self._filename):
+                os.remove(self._filename)
+            arrays.to_netcdf(path=self._filename)
+            self.imagesSaved.emit("yes")
+            self.message.emit("{} successfully saved.".format(self._filename))
+        except:
+            self.imagesSaved.emit("ERROR!")
+            self.message.emit("Error writing sequence data!")
 
-            filename = "image{:04d}.png".format(self._images_saved)
-            imsave(os.path.join(folder, filename), frame)
-
-            self._images_saved += 1
-            self.imagesSaved.emit(self._images_saved)
-
-            # go to sleep if no new data is available
-            self._mutex.lock()
-            if self.frameQueue.empty():
-                self._condition.wait(self._mutex)
-            self._mutex.unlock()
-
-    def startRecording(self, folder, rate):
-        self._folder = folder
+    def startRecording(self, filename, rate, total_images):
+        self._filename = filename
         self._rate = rate
+        self._total_images = total_images
         self._nextFrameTime = time.time() + 1 / rate
         self._images_recorded = 0
         self._images_saved = 0
+        self._arrays = []
+        try:
+            with open(filename.replace(".netcdf", "_config.txt"), 'w') as f:
+                f.write("Start time: " + str(datetime.datetime.fromtimestamp(time.time())))
+                f.write("\nFrame rate: {} / s".format(rate))
 
-        with open(os.path.join(folder, 'config.txt'), 'w') as f:
-            f.write("Start time: " + str(datetime.datetime.fromtimestamp(time.time())))
-            f.write("\nFrame rate: {} / s".format(rate))
-
-        self._recording = True
+            self.imagesSaved.emit("not yet")
+            self._recording = True
+        except:
+            pass
 
     def stopRecording(self):
-        self._recording = False
+        if self._recording:
+            self._recording = False
+            self.finished.emit()
+            self.saveArrays()
 
 
-class RecorderPlugin(QObject):
+class RecorderPlugin(Plugin):
 
     frameAvailable = pyqtSignal(np.ndarray)
 
-    def __init__(self, parent, send_data_function):
-        super().__init__(parent)
+    def __init__(self, parent, name):
+        super().__init__(name)
 
-        self.folder = QDir.homePath()
+        self.filename = QDir.homePath()
+        self._total_images = 0
 
-        self.parent = parent
-        self.send_data = send_data_function
-
-        self.canvas = plugin_canvas.PluginCanvas(parent, send_data_function)
+        self.canvas = plugin_canvas.PluginCanvas()
         self.canvas.set_name(name)
-        self.canvas.layout.takeAt(0)
+        self.canvas.layout.removeWidget(self.canvas.layoutWidget)
+        self.canvas.layoutWidget.setVisible(False)
+        self.canvas.layout.removeWidget(self.canvas.active_checkbox)
+        self.canvas.active_checkbox.setVisible(False)
+        self.set_active(True)
+
+        main_layout = QVBoxLayout()
 
         self.folderLabel = QLabel()
+        self.folderLabel.setMinimumWidth(300)
         self.folderButton = QPushButton("Choose...")
         self.folderButton.clicked.connect(self.chooseFolder)
-        self.folderGroupBox = QGroupBox("Folder")
-        layout = QHBoxLayout()
-        layout.addWidget(self.folderLabel)
-        layout.addStretch(1)
-        layout.addWidget(self.folderButton)
-        self.folderGroupBox.setLayout(layout)
-        self.canvas.layout.insertWidget(0, self.folderGroupBox)
+        self.folderGroupBox = QGroupBox("File")
+        folder_layout = QHBoxLayout()
+        folder_layout.addWidget(self.folderLabel)
+        folder_layout.addStretch(1)
+        folder_layout.addWidget(self.folderButton)
+        self.folderGroupBox.setLayout(folder_layout)
+        main_layout.addWidget(self.folderGroupBox)
 
         self.rateSpinBox = QDoubleSpinBox()
         self.rateSpinBox.setValue(1)
+        self.rateSpinBox.setMinimum(0.001)
+        self.rateSpinBox.setSingleStep(0.05)
+        self.rateSpinBox.valueChanged.connect(self.updateTotalTime)
         self.rateGroupBox = QGroupBox("Frames / s")
-        layout = QHBoxLayout()
-        layout.addWidget(self.rateSpinBox)
-        layout.addStretch(1)
-        self.rateGroupBox.setLayout(layout)
-        self.canvas.layout.insertWidget(1, self.rateGroupBox)
+        rate_layout = QHBoxLayout()
+        rate_layout.addWidget(self.rateSpinBox)
+        rate_layout.addStretch(1)
+        self.rateGroupBox.setLayout(rate_layout)
+        main_layout.addWidget(self.rateGroupBox)
+
+        self.numberImagesSpinBox = QSpinBox()
+        self.numberImagesSpinBox.setValue(10)
+        self.numberImagesSpinBox.setMaximum(9999)
+        self.numberImagesSpinBox.valueChanged.connect(self.updateTotalTime)
+        self.numberImagesGroupBox = QGroupBox("Number of images")
+        numberImages_layout = QHBoxLayout()
+        numberImages_layout.addWidget(self.numberImagesSpinBox)
+        numberImages_layout.addStretch(1)
+        self.numberImagesGroupBox.setLayout(numberImages_layout)
+        main_layout.addWidget(self.numberImagesGroupBox)
 
         self.recorded_images_label = QLabel("Images recorded: 0")
-        self.canvas.layout.insertWidget(2, self.recorded_images_label)
+        main_layout.addWidget(self.recorded_images_label)
 
-        self.saved_images_label = QLabel("Images written: 0")
-        self.canvas.layout.insertWidget(3, self.saved_images_label)
+        self.saved_images_label = QLabel("Image file written: Not yet")
+        main_layout.addWidget(self.saved_images_label)
 
         self.time_label = QLabel("Elapsed time: ")
-        self.canvas.layout.insertWidget(4, self.time_label)
+        main_layout.addWidget(self.time_label)
 
-        layout = QHBoxLayout()
+        self.total_time_label = QLabel("Total time: ")
+        main_layout.addWidget(self.total_time_label)
+
+        button_layout = QHBoxLayout()
         self.start_button = QPushButton("start")
-        layout.addWidget(self.start_button)
+        button_layout.addWidget(self.start_button)
         self.stop_button = QPushButton("stop")
-        layout.addWidget(self.stop_button)
-        self.canvas.layout.insertLayout(4, layout)
+        button_layout.addWidget(self.stop_button)
+        main_layout.addLayout(button_layout)
 
-        self.canvas.ontopCheckbox.setChecked(False)
+        outer_layout = QHBoxLayout()
+        outer_layout.addStretch(1)
+        outer_layout.addLayout(main_layout)
+        outer_layout.addStretch(1)
+        self.canvas.layout.addStretch(1)
+        self.canvas.layout.addLayout(outer_layout)
+        self.canvas.layout.addStretch(1)
 
-        self.recorderThread = RecorderThread()
-        self.recorderThread.imagesRecorded.connect(self.updateImagesRecorded)
-        self.recorderThread.imagesSaved.connect(self.updateImagesSaved)
-        self.frameAvailable.connect(self.recorderThread.processFrame)
+        self.updateTotalTime()
+
+        self.recorder_worker = RecorderWorker()
+        self.recorder_worker.imagesRecorded.connect(self.updateImagesRecorded)
+        self.recorder_worker.imagesSaved.connect(self.updateImagesSaved)
+        self.frameAvailable.connect(self.recorder_worker.processFrame)
         self.start_button.clicked.connect(self.startRecording)
-        self.stop_button.clicked.connect(self.recorderThread.stopRecording)
+        self.stop_button.clicked.connect(self.recorder_worker.stopRecording)
+        self.recorder_worker.message.connect(self.message)
 
         self.updateFolderLabel()
 
         self.timer = QTimer()
         self.startTime = 0
         self.timer.timeout.connect(self.updateTime)
-        self.stop_button.clicked.connect(self.timer.stop)
+        self.recorder_worker.finished.connect(self.timer.stop)
 
     def startRecording(self):
-        files = os.listdir(self.folder)
-        empty_folder = files == [] or (len(files) == 1 and files[0] == '.DS_Store')
-        if not empty_folder:
-            message = r'The folder is not empty! Do you want to delete previous image files? ' + \
-                      '(Pressing "No" will start the sequence and potentially overwrite previous images, ' + \
-                      'pressing "Cancel" will abort the sequence)'
-            reply = QMessageBox.question(self.canvas, "Warning", message,
-                                         QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-            if reply == QMessageBox.Yes:
-                for file in os.listdir(self.folder):
-                    if re.match(r"image\d*.png", file):   # if it matches the expected file name
-                        path = os.path.join(self.folder, file)
-                        if os.path.isfile(path):
-                            os.remove(path)
-            elif reply == QMessageBox.Cancel:
-                return
-
         self.startTime = time.time()
         self.updateTime()
         self.timer.start(1000)
-        self.recorderThread.startRecording(self.folder, self.rateSpinBox.value())
+        self._total_images = self.numberImagesSpinBox.value()
+        self.recorder_worker.startRecording(self.filename, self.rateSpinBox.value(), self._total_images)
 
     def updateImagesRecorded(self, number):
         self.recorded_images_label.setText("Images recorded: {}".format(number))
+        self.message.emit("Recorded {} / {} images".format(number, self._total_images))
 
-    def updateImagesSaved(self, number):
-        self.saved_images_label.setText("Images written: {}".format(number))
+    def updateImagesSaved(self, answer):
+        self.saved_images_label.setText("Images file written: {}".format(answer))
 
     def updateTime(self):
         seconds = round(time.time() - self.startTime)
         self.time_label.setText("Elapsed time: " + str(datetime.timedelta(seconds=seconds)))
 
-    def process_frame(self, frame: np.ndarray):
-        self.frameAvailable.emit(frame)
+    def updateTotalTime(self):
+        try:
+            seconds = round(self.numberImagesSpinBox.value() / self.rateSpinBox.value())
+        except ZeroDivisionError:
+            seconds = 0
+        self.total_time_label.setText("Total time: {} ({} s)".format(datetime.timedelta(seconds=seconds), seconds))
+
+    @pyqtSlot(np.ndarray)
+    def process_ndarray_bw(self, array: np.ndarray):
+        self.frameAvailable.emit(array)
 
     def chooseFolder(self):
-        self.folder = QFileDialog.getExistingDirectory(self.canvas, "Choose folder to save images",
-                                                       self.folder,
-                                                       QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
-        self.updateFolderLabel()
+        filename, _ = QFileDialog.getSaveFileName(caption="Save image", directory=self.filename,
+                                                  filter="netCDF file (*.netcdf)",
+                                                  options=QFileDialog.DontUseNativeDialog)
+        # folder = QFileDialog.getExistingDirectory(self.canvas, "Choose file to save images",
+        #                                           self.folder,
+        #                                           QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
+        if filename != "":
+            if not filename.endswith(".netcdf"):
+                filename += ".netcdf"
+            self.filename = filename
+            self.updateFolderLabel()
 
     def updateFolderLabel(self):
-        self.folderLabel.setText(self.folder)
+        self.folderLabel.setText(self.filename)
+
+    def get_widget(self):
+        return self.canvas
 
 
-plugin = None
-
-
-def init(parent=None, send_data_function=None):
-    """
-    Initialize the plugin. Build the window and create any necessary variables
-    :param parent: The main window can be provided here
-    :param send_data_function: A function that can start or stop data being sent
-    """
-    global plugin
-    plugin = RecorderPlugin(parent, send_data_function)
-
-
-def process_frame(frame: np.ndarray):
-    """
-    Process a numpy array: take the data and convert it into a plot
-    :param frame: a numpy array
-    """
-    plugin.process_frame(frame)
-
-
-
-def show_window(show: bool = True):
-    """
-    Show or hide the plugin window
-    :param show: True or False
-    """
-    plugin.canvas.show_canvas(show)
+def get_instance(parent:QObject=None):
+    return RecorderPlugin(parent=parent, name="Sequence recorder")

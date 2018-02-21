@@ -179,8 +179,9 @@ class FFTPlugin2(Plugin):
 
         self.canvas = plugin_canvas.PluginCanvas()
         self.canvas.set_name(name)
-        self.canvas.resize(900, 600)
+        # self.canvas.resize(900, 600)
         self.layoutWidget = self.canvas.layoutWidget
+        self.canvas.active.connect(self.set_active)
 
         # make fields to enter parameters:
         self.canvas.param_layout = QHBoxLayout()
@@ -283,7 +284,7 @@ class FFTPlugin2(Plugin):
         self.canvas.blob_layout.addWidget(blur_box)
         blob_widget = QWidget()
         blob_widget.setLayout(self.canvas.blob_layout)
-        self.canvas.layout.insertWidget(2, blob_widget)
+        self.canvas.layout.insertWidget(3, blob_widget)
         self.blob_boxes["x"].setMaximum(300)
         self.blob_boxes["y"].setMaximum(300)
         self.blob_boxes["r"].setSingleStep(0.5)
@@ -366,28 +367,29 @@ class FFTPlugin2(Plugin):
 
     @pyqtSlot(np.ndarray)
     def process_clipped_ndarray_bw(self, array: np.ndarray):
-        parameters = {'min_sigma': self.parameter_boxes["min_sigma"].value(),
-                      'max_sigma': self.parameter_boxes["max_sigma"].value(),
-                      'overlap': self.parameter_boxes["overlap"].value(),
-                      'threshold': self.parameter_boxes["threshold"].value(),
-                      'number': int(self.parameter_boxes["number"].currentText()),
-                      'method': self.parameter_boxes["method"].currentText(),
-                      'window': self.parameter_boxes["window"].isChecked(),
-                      'invWindow': self.parameter_boxes["invWindow"].isChecked(),
-                      'auto': self.parameter_boxes["auto"].isChecked(),
-                      'blob_x': self.blob_boxes["x"].value(),
-                      'blob_y': self.blob_boxes["y"].value(),
-                      'blob_r': self.blob_boxes["r"].value(),
-                      'auto_blob': self.blob_boxes["auto"].isChecked(),
-                      'homogenize': self.blob_boxes["homogenize"].isChecked(),
-                      'homogenize_value': self.blob_boxes["homogenize_value"].value(),
-                      'homogenize_blur': self.blob_boxes["homogenize_blur"].value()
-                      }
-        self.frameAvailable.emit(array, parameters)
+        if self._active:
+            parameters = {'min_sigma': self.parameter_boxes["min_sigma"].value(),
+                          'max_sigma': self.parameter_boxes["max_sigma"].value(),
+                          'overlap': self.parameter_boxes["overlap"].value(),
+                          'threshold': self.parameter_boxes["threshold"].value(),
+                          'number': int(self.parameter_boxes["number"].currentText()),
+                          'method': self.parameter_boxes["method"].currentText(),
+                          'window': self.parameter_boxes["window"].isChecked(),
+                          'invWindow': self.parameter_boxes["invWindow"].isChecked(),
+                          'auto': self.parameter_boxes["auto"].isChecked(),
+                          'blob_x': self.blob_boxes["x"].value(),
+                          'blob_y': self.blob_boxes["y"].value(),
+                          'blob_r': self.blob_boxes["r"].value(),
+                          'auto_blob': self.blob_boxes["auto"].isChecked(),
+                          'homogenize': self.blob_boxes["homogenize"].isChecked(),
+                          'homogenize_value': self.blob_boxes["homogenize_value"].value(),
+                          'homogenize_blur': self.blob_boxes["homogenize_blur"].value()
+                          }
+            self.frameAvailable.emit(array, parameters)
 
     def get_widget(self):
         return self.canvas
 
 
 def get_instance(parent:QObject=None):
-    return FFTPlugin2(parent=parent, name="Phase Extraction")
+    return FFTPlugin2(parent=parent, name="FFT and Phase Extraction")

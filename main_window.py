@@ -36,10 +36,7 @@ class MainWindow(QMainWindow):
         self.camera_dialog = CameraDialog()
         self.ui.actionChoose_camera.triggered.connect(self.camera_dialog.choose_camera)
         self.camera_dialog.camera_changed.connect(self.data_handler.change_camera)
-
-        self.plugin_dialog = PluginDialog()
-        self.plugin_dialog.set_plugins(self.data_handler.plugins)
-        self.ui.actionManage_plugins.triggered.connect(self.plugin_dialog.exec_)
+        self.camera_dialog.choose_first_camera()
 
         self.ui.actionShow_Settings.toggled.connect(self.show_settings)
 

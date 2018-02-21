@@ -53,3 +53,14 @@ class CameraDialog(QDialog):
             else:
                 new_camera = QtCamera(self._qcameras[index])
             self.camera_changed.emit(new_camera)
+
+    @pyqtSlot()
+    def choose_first_camera(self):
+        try:
+            if self._zwo_camera:
+                new_camera = ZwoCamera()
+            else:
+                new_camera = QtCamera(self._qcameras[0])
+            self.camera_changed.emit(new_camera)
+        except:
+            pass

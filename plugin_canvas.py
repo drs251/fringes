@@ -1,11 +1,14 @@
 from PyQt5 import QtWidgets, QtGui
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QCheckBox
 
 
 class PluginCanvas(QWidget):
+
+    active = pyqtSignal(bool)
+
     def __init__(self, parent=None, send_data_function=None):
         super().__init__(parent)
 
@@ -19,14 +22,14 @@ class PluginCanvas(QWidget):
         self.layoutWidget.setBackground(None)
         pg.setConfigOptions(antialias=True, background=None, foreground='k')
 
+        self.active_checkbox = QCheckBox("active")
+        self.active_checkbox.toggled.connect(self.active)
         # set the layout
         layout = QtWidgets.QVBoxLayout()
         self.layout = layout
+        layout.addWidget(self.active_checkbox)
         layout.addWidget(self.layoutWidget)
-        # TODO: add active checkbox here?
         self.setLayout(layout)
-
-        self.resize(350, 350)
 
     def set_name(self, name):
         self.setWindowTitle(name)

@@ -145,7 +145,6 @@
    <addaction name="actionChoose_camera"/>
    <addaction name="actionSave_image"/>
    <addaction name="actionDraw_lines"/>
-   <addaction name="actionManage_plugins"/>
    <addaction name="actionShow_Settings"/>
    <addaction name="actionQuit"/>
   </widget>
@@ -165,15 +164,6 @@
    </property>
    <property name="text">
     <string>Save image</string>
-   </property>
-  </action>
-  <action name="actionManage_plugins">
-   <property name="icon">
-    <iconset resource="../resources.qrc">
-     <normaloff>:/icons/ui/puzzle-piece-8x.png</normaloff>:/icons/ui/puzzle-piece-8x.png</iconset>
-   </property>
-   <property name="text">
-    <string>Manage plugins</string>
    </property>
   </action>
   <action name="actionQuit">

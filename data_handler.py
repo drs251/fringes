@@ -34,7 +34,10 @@ class DataHandler(QObject):
         self.plugin_loader = PluginLoader()
         self.plugins = self.plugin_loader.plugins
         for plugin in self.plugins:
-            plugin.message.connect(self.message)
+            try:
+                plugin.message.connect(self.message)
+            except:
+                qDebug("Cannot connect to messages from {}".plugin.getName())
         self.ndarray_available.connect(self.plugin_loader.ndarray_available)
         self.ndarray_bw_available.connect(self.plugin_loader.ndarray_bw_available)
         self.clipped_ndarray_available.connect(self.plugin_loader.clipped_ndarray_available)
@@ -43,6 +46,7 @@ class DataHandler(QObject):
         self.data_saver = DataSaver()
         self.ndarray_bw_available.connect(self.data_saver.set_array)
         self.save_file.connect(self.data_saver.save_array)
+        self.data_saver.message.connect(self.message)
 
         # this limits the global frame rate in this program:
         self.last_frame_time = time.time()
@@ -85,7 +89,7 @@ class DataHandler(QObject):
         :return:
         """
         if len(array.shape) == 3:
-            array = array.sum(axis=2)
+            array = array.mean(axis=2)
         self.ndarray_bw_available.emit(array)
 
     @pyqtSlot(np.ndarray)

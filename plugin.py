@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget
 
 class Plugin(QObject):
 
-    message = pyqtProperty(str)
+    message = pyqtSignal(str)
 
     def __init__(self, name):
 
@@ -44,6 +44,10 @@ class Plugin(QObject):
     @pyqtSlot(np.ndarray)
     def process_clipped_ndarray_bw(self, array: np.ndarray):
         pass
+
+    @pyqtSlot(bool)
+    def set_active(self, active: bool):
+        self._active = active
 
 
 qmlRegisterType(Plugin, 'Plugins', 1, 0, 'Plugin')
