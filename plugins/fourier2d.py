@@ -83,7 +83,7 @@ class FFTWorker(QThread):
             data = np.rot90(frame, axes=(1,0))
 
             if homogenize:
-                data = vtc.homogenize(data, homogenize_value, homogenize_blur)
+                data = vtc.highpass(data, homogenize_value, homogenize_blur)
 
             if window:
                 data = vtc.apply_window(data)
@@ -268,7 +268,7 @@ class FFTPlugin2(Plugin):
             self.canvas.blob_layout.addWidget(spin_box)
             self.canvas.blob_layout.addStretch(1)
         self.canvas.blob_layout.addStretch(1)
-        homogenize_box = QCheckBox("homogenize")
+        homogenize_box = QCheckBox("high-pass")
         self.blob_boxes["homogenize"] = homogenize_box
         self.canvas.blob_layout.addWidget(homogenize_box)
         homogenize_value = QDoubleSpinBox()

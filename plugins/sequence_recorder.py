@@ -23,6 +23,26 @@ description = "Saves a sequence of images"
 # this does the calculations in another thread:
 class RecorderWorker(QObject):
 
+    class FileWriter(QObject):
+
+        success = pyqtSignal(bool)
+
+        def __init__(self, arrays, filename):
+            super().__init__()
+            self._arrays = arrays
+            self._filename = filename
+
+        def write_file(self):
+            try:
+                arrays = xr.concat(self._arrays, "sequence_number")
+                arrays.encoding['zlib'] = True
+                if os.path.isfile(self._filename):
+                    os.remove(self._filename)
+                arrays.to_netcdf(path=self._filename)
+                self.success.emit(True)
+            except:
+                self.success.emit(False)
+
     imagesRecorded = pyqtSignal(int)
     imagesSaved = pyqtSignal(str)
     message = pyqtSignal(str)
@@ -39,6 +59,8 @@ class RecorderWorker(QObject):
         self._rate = None
         self._nextFrameTime = None
         self._arrays = []
+        self.file_writer = None
+        self.write_thread = None
 
     def processFrame(self, frame):
         if self._recording and time.time() >= self._nextFrameTime:
@@ -54,15 +76,20 @@ class RecorderWorker(QObject):
                 self._nextFrameTime += 1 / self._rate
 
     def saveArrays(self):
-        try:
-            arrays = xr.concat(self._arrays, "sequence_number")
-            arrays.encoding['zlib'] = True
-            if os.path.isfile(self._filename):
-                os.remove(self._filename)
-            arrays.to_netcdf(path=self._filename)
+        self.message.emit("writing images...")
+        self.imagesSaved.emit("saving...")
+        self.file_writer = self.FileWriter(self._arrays, self._filename)
+        self.write_thread = QThread()
+        self.file_writer.success.connect(self.writing_finished)
+        self.file_writer.moveToThread(self.write_thread)
+        self.write_thread.started.connect(self.file_writer.write_file)
+        self.write_thread.start()
+
+    def writing_finished(self, success):
+        if success:
             self.imagesSaved.emit("yes")
             self.message.emit("{} successfully saved.".format(self._filename))
-        except:
+        else:
             self.imagesSaved.emit("ERROR!")
             self.message.emit("Error writing sequence data!")
 
@@ -202,7 +229,7 @@ class RecorderPlugin(Plugin):
         self.message.emit("Recorded {} / {} images".format(number, self._total_images))
 
     def updateImagesSaved(self, answer):
-        self.saved_images_label.setText("Images file written: {}".format(answer))
+        self.saved_images_label.setText("Image file written: {}".format(answer))
 
     def updateTime(self):
         seconds = round(time.time() - self.startTime)

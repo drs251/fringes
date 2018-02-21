@@ -4,8 +4,7 @@ from skimage.feature import blob_dog, blob_log, blob_doh
 import numpy.fft
 import scipy.ndimage
 from scipy.ndimage.filters import gaussian_filter
-from scipy import signal
-
+from scipy import signal, ndimage
 
 # uniform default values:
 DEF_THRESHOLD = 1
@@ -321,6 +320,15 @@ def homogenize(image, sigma=DEF_SIGMA, blur=DEF_BLUR_HOMO):
     if blur != 0:
         ratio = gaussian_filter(ratio, blur)
     return ratio
+
+
+def highpass(image, sigma=DEF_SIGMA, blur=DEF_BLUR_HOMO):
+    lowpass = ndimage.gaussian_filter(image, sigma)
+    highpass = image - lowpass
+    highpass -= highpass.min()
+    if blur != 0:
+        ratio = gaussian_filter(highpass, blur)
+    return highpass
 
 
 def apply_window(data, window=DEF_WINDOW, *args):

@@ -32,7 +32,6 @@ class DataSaver(QObject):
                 except:
                     qDebug("Error generating new file name.")
                     new_name = ""
-                qDebug("new name" + new_name)
                 return new_name
             else:
                 return ""
