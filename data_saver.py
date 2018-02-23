@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 import re
 import os
+from scipy.misc import imsave
 
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot, qDebug
 from PyQt5.QtWidgets import QFileDialog
@@ -50,25 +51,37 @@ class DataSaver(QObject):
         self._last_image = None
 
     @pyqtSlot()
-    def save_array(self):
+    def save_image(self):
         self._image_to_save = self._last_image
 
-        filename, _ = QFileDialog.getSaveFileName(caption="Save image", directory=self.name_generator.next_name,
-                                                  filter="netCDF file (*.netcdf)",
-                                                  options=QFileDialog.DontUseNativeDialog)
-
+        filter_netcdf = "netCDF file (*.netcdf)"
+        filter_png = "png file (*.png)"
+        filename, filter = QFileDialog.getSaveFileName(caption="Save image", directory=self.name_generator.next_name,
+                                                       filter="{};;{}".format(filter_netcdf, filter_png),
+                                                       options=QFileDialog.DontUseNativeDialog)
         try:
             if filename == "":
-                raise ValueError
-            if not filename.endswith(".netcdf"):
-                filename += ".netcdf"
-            self.name_generator.set_prev_name(filename)
+                raise ValueError()
+            if filter == filter_netcdf:
+                if not filename.endswith(".netcdf"):
+                    filename += ".netcdf"
 
-            xarr = xarray_from_frame(self._image_to_save)
-            if os.path.isfile(filename):
-                os.remove(filename)
-            xarr.to_netcdf(path=filename)
+                xarr = xarray_from_frame(self._image_to_save)
+                if os.path.isfile(filename):
+                    os.remove(filename)
+                xarr.to_netcdf(path=filename)
+            elif filter == filter_png:
+                if not filename.endswith(".png"):
+                    filename += ".png"
+                if os.path.isfile(filename):
+                    os.remove(filename)
+                imsave(filename, self._image_to_save)
+            else:
+                raise ValueError()
+
+            self.name_generator.set_prev_name(filename)
             self.message.emit("{} successfully saved.".format(filename))
+
         except ValueError:
             self.message.emit("Image not saved")
 
@@ -76,7 +89,6 @@ class DataSaver(QObject):
     @pyqtSlot(np.ndarray)
     def set_array(self, array):
         self._last_image = array
-
 
 def xarray_from_frame(frame):
     y_len, x_len = frame.shape

@@ -1,15 +1,14 @@
-from PyQt5.QtGui import QImage
-
 import zwoasi
-from PyQt5.QtMultimedia import QCamera, QVideoFrame
-from PyQt5.QtCore import QSize, QThread, QMutex, QWaitCondition, QMutexLocker, pyqtSignal, pyqtSlot, qDebug
+from PyQt5.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, pyqtSlot, qDebug, QWaitCondition, QObject, QTimer
 import numpy as np
 
 from camera import Camera
 from camera_settings_widget import CameraSettingsWidget
 
 
-# TODO: this should also provide a settings widget
+def clamp(x, minn, maxx):
+    return min(max(x, minn), maxx)
+
 
 class ZwoCamera(Camera):
 
@@ -56,54 +55,81 @@ class ZwoCamera(Camera):
 
                 self.ndarray_available.emit(img)
 
-    class AutoSettingsThread(QThread):
+    class AutoSettingsObject(QObject):
         gain_changed = pyqtSignal(float)
-        saturation_changed = pyqtSignal(float)
+        exposure_time_changed = pyqtSignal(float)
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self._mutex = QMutex()
             self._saturation = 0
-            self._abort = False
+            self._enabled = False
             self._piUi = 0
+            self._last_error = 0
+            self._gain = None
+            self._exposure_time = None
+            self._min_gain = None
+            self._max_gain = None
+            self._min_exposure_time = None
+            self._max_exposure_time = None
+            self._setpoint = 85.
+            self._Kp = 0.5
+            self._Kd = 10
+            self._Ti = 0.3
+            self._interval = 200
+            self._timer = QTimer()
+            self._timer.timeout.connect(self._run)
 
         @pyqtSlot(int)
         def set_saturation(self, sat):
-            self._saturation = 0
+            self._saturation = sat
+
+        @pyqtSlot(float)
+        def set_exposure_time(self, exposure):
+            self._exposure_time = exposure
+
+        @pyqtSlot(float)
+        def set_gain(self, gain):
+            self._gain = gain
+
+        def set_exposure_range(self, rng):
+            self._min_exposure_time, self._max_exposure_time = rng
+
+        def set_gain_range(self, rng):
+            self._min_gain, self._max_gain = rng
+
+        def start(self):
+            self._timer.start(self._interval)
 
         def stop(self):
-            with QMutexLocker(self._mutex):
-                self._abort = True
+            self._timer.stop()
 
-        def run(self):
-            # TODO: adapt this
-            return
-
-            while True:
-                with QMutexLocker(self._mutex):
-                    if self._abort:
-                        break
-
-            # a simple PI controller:
-            setpoint = 85.
-            Kp = 25
-            Ti = 0.3
-
-            error = self._saturation - setpoint
-            ui = self._piUi + error * self._autoSaturationInterval / 1000 * Ti
+        def _run(self):
+            error = self._saturation - self._setpoint
+            ui = self._piUi + error * self._interval / 1000 * self._Ti
             self._piUi = ui
-            output = - Kp * (error + ui)
+            ud = self._last_error / self._interval * self._Kd
+            output = - self._Kp * (error + ui + ud)
+            self._last_error = error
 
-            if (error > 0 and self.minGain < self.gain) or (error < 0 and self.gain < self.maxGain):
+            previous_gain = self._gain
+            previous_exposure_time = self._exposure_time
+
+            if (error > 0 and self._min_gain < self._gain) or (error < 0 and self._gain < self._max_gain):
                 # adjust gain
                 db_increase = output / 5
-                self.gain = clamp(self.gain + db_increase, self.minGain, self.maxGain)
-            elif (error > 0 and self.minExposure < self.exposureTime) or \
-                    (error < 0 and self.exposureTime < self.maxExposure):
-                self.exposureTime = clamp(self.exposureTime + output, self.minExposure, self.maxExposure)
+                self._gain = clamp(self._gain + db_increase, self._min_gain, self._max_gain)
+            elif (error > 0 and self._min_exposure_time < self._exposure_time) or \
+                    (error < 0 and self._exposure_time < self._max_exposure_time):
+                self._exposure_time = clamp(self._exposure_time + output, self._min_exposure_time,
+                                            self._max_exposure_time)
             else:
                 # stuck at the edge...
                 self._piUi = 0
+
+            if self._exposure_time != previous_exposure_time:
+                self.exposure_time_changed.emit(self._exposure_time)
+            if self._gain != previous_gain:
+                self.gain_changed.emit(self._gain)
 
     # to convert the values from ZWO into nice units:
     _gain_factor = 10
@@ -127,39 +153,48 @@ class ZwoCamera(Camera):
         try:
             zwoasi.init(self.ZWOLIB_PATH)
         except zwoasi.ZWO_Error:
+            # ignore, if the library is already initialized
             pass
 
         num_cameras = zwoasi.get_num_cameras()
 
         if num_cameras > 0:
-            print("{} ZWO camera(s) found.".format(num_cameras))
             self._camera = zwoasi.Camera(0)
         else:
-            print("No ZWO cameras found!")
-            zwo_camera = None
             raise RuntimeError("No ZWO cameras found")
 
-        if self._camera is not None:
-            self._active = True
-            self._manualMode = True
-            self._controls = self._camera.get_controls()
-            self._info = self._camera.get_camera_property()
+        self._active = True
+        self._manualMode = True
+        self._controls = self._camera.get_controls()
+        self._info = self._camera.get_camera_property()
 
-            # TODO check if exposure and gain have to be set default values and auto disabled
-            self._camera.set_image_type(zwoasi.ASI_IMG_RAW16)
-            self._camera.set_control_value(zwoasi.ASI_GAIN, 20)
-            self._camera.set_control_value(zwoasi.ASI_EXPOSURE, 3000)
-            self._camera.set_control_value(zwoasi.ASI_FLIP, 0)
-            self._camera.disable_dark_subtract()
-            self._camera.set_control_value(zwoasi.ASI_COOLER_ON, 1)
-            self._camera.set_control_value(zwoasi.ASI_TARGET_TEMP, self._controls["TargetTemp"]["MinValue"])
+        # TODO check if exposure and gain have to be set default values and auto disabled
+        self._camera.set_image_type(zwoasi.ASI_IMG_RAW16)
+        self._camera.set_control_value(zwoasi.ASI_GAIN, 20)
+        self._camera.set_control_value(zwoasi.ASI_EXPOSURE, 3000)
+        self._camera.set_control_value(zwoasi.ASI_FLIP, 0)
+        self._camera.disable_dark_subtract()
+        self._camera.set_control_value(zwoasi.ASI_COOLER_ON, 1)
+        self._camera.set_control_value(zwoasi.ASI_TARGET_TEMP, self._controls["TargetTemp"]["MinValue"])
 
         self.capture_thread = self.CaptureThread(self._camera)
         self.capture_thread.ndarray_available.connect(self.ndarray_available)
         self.ndarray_available.connect(self.calculate_saturation)
 
-        self.auto_settings_thread = self.AutoSettingsThread()
+        self.auto_settings_thread = self.AutoSettingsObject()
+        self.auto_settings_thread.set_gain(self.get_gain())
+        self.auto_settings_thread.set_exposure_time(self.get_exposure())
+        self.auto_settings_thread.set_gain_range(self.get_gain_range())
+        self.auto_settings_thread.set_exposure_range(self.get_exposure_range())
+        self.gain_changed.connect(self.auto_settings_thread.set_gain)
+        self.exposure_time_changed.connect(self.auto_settings_thread.set_exposure_time)
         self.saturation_changed.connect(self.auto_settings_thread.set_saturation)
+        self.auto_settings_thread.gain_changed.connect(self.set_gain)
+        self.auto_settings_thread.exposure_time_changed.connect(self.set_exposure)
+
+    def __del__(self):
+        self.capture_thread.stop()
+        self.capture_thread.wait()
 
     @pyqtSlot()
     def start(self):
@@ -173,7 +208,7 @@ class ZwoCamera(Camera):
     def calculate_saturation(self, array):
         sat = array.max() / self.maxval * 100
         self._last_saturations.append(sat)
-        if len(self._last_saturations) > 10:
+        if len(self._last_saturations) > 1:
             self._last_saturations.pop(0)
         weight = np.arange(1, len(self._last_saturations) + 1)
         self._saturation = np.sum(weight * np.array(self._last_saturations)) / np.sum(weight)
@@ -202,6 +237,8 @@ class ZwoCamera(Camera):
     @pyqtSlot(bool)
     def enable_auto(self, auto):
         if auto:
+            self.auto_settings_thread.set_gain = self.get_gain()
+            self.auto_settings_thread.exposure_time = self.get_exposure()
             self.auto_settings_thread.start()
         else:
             self.auto_settings_thread.stop()

@@ -35,6 +35,7 @@ class QtCamera(Camera):
             def stop(self):
                 with QMutexLocker(self._mutex):
                     self._abort = True
+                    self._condition.wakeOne()
 
             def run(self):
                 self._abort = False
@@ -127,6 +128,12 @@ class QtCamera(Camera):
             qDebug("Camera error: ", error)
 
         self.maxval = 2**8
+
+    def __del__(self):
+        self._camera.stop()
+        self._video_surface.stop()
+        self._video_surface.conversion_thread.stop()
+        self._video_surface.conversion_thread.wait()
 
     def _valid(self):
         return True

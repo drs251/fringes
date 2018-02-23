@@ -23,13 +23,18 @@ class MainWindow(QMainWindow):
         self.ui.graphicsView.ci.layout.setContentsMargins(0, 0, 0, 0)
         self.ui.graphicsView.ci.layout.setSpacing(0)
 
+        self.settings_layout = QHBoxLayout()
+        self.settings_widget = QWidget()
+        self.settings_layout.addWidget(self.settings_widget)
+        self.ui.camSettingsWidget.setLayout(self.settings_layout)
+
         self.data_handler = DataHandler()
         for plugin in self.data_handler.plugins:
             self.add_plugin(plugin.get_widget(), plugin.name)
         self.data_handler.ndarray_available.connect(self.show_ndarray)
         self.data_handler.camera_controls_changed.connect(self.set_camera_controls)
         self.ui.actionSave_image.triggered.connect(self.data_handler.save_file)
-        self.data_handler.enable_saturation_widget.connect(self.ui.progressBar.setEnabled)
+        self.data_handler.enable_saturation_widget.connect(self.enable_saturation_bar)
         self.data_handler.saturation_changed.connect(self.ui.progressBar.setValue)
         self.data_handler.message.connect(self.show_message)
 
@@ -47,9 +52,17 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(QWidget)
     def set_camera_controls(self, controls):
-        layout = QHBoxLayout()
-        layout.addWidget(controls)
-        self.ui.camSettingsWidget.setLayout(layout)
+        self.settings_layout.removeWidget(self.settings_widget)
+        self.settings_widget.setParent(None)
+        self.settings_widget.deleteLater()
+        self.settings_widget = controls
+        self.settings_layout.addWidget(controls)
+
+    @pyqtSlot(bool)
+    def enable_saturation_bar(self, enable):
+        self.ui.progressBar.setEnabled(enable)
+        if not enable:
+            self.ui.progressBar.setValue(0)
 
     @pyqtSlot(int)
     def set_saturation_percentage(self, value):

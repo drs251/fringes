@@ -60,7 +60,6 @@ class CameraSettingsWidget(QWidget):
         def value_from_slider_position(self, value: int):
             if value != self._slider_position:
                 value = self._min + value * (self._max - self._min) / self._steps
-                qDebug("value from slider position: {}".format(np.round(value, decimals=1)))
                 self.set_value(np.round(value, decimals=1))
 
         @pyqtSlot(float, float)
@@ -108,7 +107,6 @@ class CameraSettingsWidget(QWidget):
     @pyqtSlot(float)
     def set_exposure(self, exp):
         if exp != self._exposure:
-            qDebug("new exposure: {}".format(exp))
             self._exposure = exp
             self.exposure_widget.set_value(exp)
             self.exposure_changed.emit(exp)
@@ -116,14 +114,12 @@ class CameraSettingsWidget(QWidget):
     @pyqtSlot(float)
     def set_gain(self, gain):
         if gain != self._gain:
-            qDebug("new gain: {}".format(gain))
             self._gain = gain
             self.gain_widget.set_value(gain)
             self.gain_changed.emit(gain)
 
     @pyqtSlot(float, float)
     def set_exposure_range(self, min_exp, max_exp):
-        qDebug("{} {}".format(min_exp, max_exp))
         self.exposure_widget.set_range(min_exp, max_exp)
 
     @pyqtSlot(float, float)

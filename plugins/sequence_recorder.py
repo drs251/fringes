@@ -131,9 +131,9 @@ class RecorderPlugin(Plugin):
         self.canvas = plugin_canvas.PluginCanvas()
         self.canvas.set_name(name)
         self.canvas.layout.removeWidget(self.canvas.layoutWidget)
-        self.canvas.layoutWidget.setVisible(False)
+        self.canvas.layoutWidget.setParent(None)
         self.canvas.layout.removeWidget(self.canvas.active_checkbox)
-        self.canvas.active_checkbox.setVisible(False)
+        self.canvas.active_checkbox.setParent(None)
         self.set_active(True)
 
         main_layout = QVBoxLayout()

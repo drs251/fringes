@@ -37,7 +37,7 @@ class DataHandler(QObject):
             try:
                 plugin.message.connect(self.message)
             except:
-                qDebug("Cannot connect to messages from {}".plugin.getName())
+                qDebug("Cannot connect to messages from {}".format(plugin.getName()))
         self.ndarray_available.connect(self.plugin_loader.ndarray_available)
         self.ndarray_bw_available.connect(self.plugin_loader.ndarray_bw_available)
         self.clipped_ndarray_available.connect(self.plugin_loader.clipped_ndarray_available)
@@ -45,7 +45,7 @@ class DataHandler(QObject):
 
         self.data_saver = DataSaver()
         self.ndarray_bw_available.connect(self.data_saver.set_array)
-        self.save_file.connect(self.data_saver.save_array)
+        self.save_file.connect(self.data_saver.save_image)
         self.data_saver.message.connect(self.message)
 
         # this limits the global frame rate in this program:
@@ -57,21 +57,17 @@ class DataHandler(QObject):
         if self.camera is not None:
             self.camera.stop()
             # TODO: fix these disconnect statements
-            self.camera.disconnect(self.ndarray_available)
-            if camera.has_controls():
-                try:
-                    self.camera.saturation_changed.connect(self.saturation_changed)
-                except:
-                    pass
+            # self.camera.ndarray_available.disconnect()
+            del self.camera
         self.camera = camera
-        self.camera.ndarray_available.connect(self.process_new_array)
-        self.camera_controls_changed.emit(camera.get_controls())
-        self.enable_saturation_widget.emit(camera.has_controls())
-        if camera.has_controls():
+        if self.camera.has_controls():
             try:
                 self.camera.saturation_changed.connect(self.saturation_changed)
             except:
                 pass
+        self.camera.ndarray_available.connect(self.process_new_array)
+        self.camera_controls_changed.emit(self.camera.get_controls())
+        self.enable_saturation_widget.emit(self.camera.has_controls())
         self.camera.start()
 
     @pyqtSlot(np.ndarray)
