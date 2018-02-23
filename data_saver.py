@@ -54,7 +54,7 @@ class DataSaver(QObject):
     def save_image(self):
         self._image_to_save = self._last_image
 
-        filter_netcdf = "netCDF file (*.netcdf)"
+        filter_netcdf = "netCDF file (*.nc)"
         filter_png = "png file (*.png)"
         filename, filter = QFileDialog.getSaveFileName(caption="Save image", directory=self.name_generator.next_name,
                                                        filter="{};;{}".format(filter_netcdf, filter_png),
@@ -63,8 +63,8 @@ class DataSaver(QObject):
             if filename == "":
                 raise ValueError()
             if filter == filter_netcdf:
-                if not filename.endswith(".netcdf"):
-                    filename += ".netcdf"
+                if not filename.endswith(".nc"):
+                    filename += ".nc"
 
                 xarr = xarray_from_frame(self._image_to_save)
                 if os.path.isfile(filename):
