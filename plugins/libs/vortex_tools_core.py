@@ -327,7 +327,7 @@ def highpass(image, sigma=DEF_SIGMA, blur=DEF_BLUR_HOMO):
     highpass = image - lowpass
     highpass -= highpass.min()
     if blur != 0:
-        ratio = gaussian_filter(highpass, blur)
+        highpass = gaussian_filter(highpass, blur)
     return highpass
 
 

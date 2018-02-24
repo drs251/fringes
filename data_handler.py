@@ -1,7 +1,7 @@
 import numpy as np
 import time
 
-from PyQt5.QtCore import pyqtSlot, QObject, pyqtSignal, QRectF, qDebug
+from PyQt5.QtCore import pyqtSlot, QObject, pyqtSignal, QRectF, qDebug, QRect
 from PyQt5.QtWidgets import QWidget
 
 from camera import Camera
@@ -26,8 +26,7 @@ class DataHandler(QObject):
 
         self.camera = None
 
-        # this should be considered to be as a percentage of the original frame
-        self.clip_size = QRectF(0, 0, 1, 1)
+        self.clip_size = None
         self.ndarray_available.connect(self.clip_array)
         self.ndarray_available.connect(self.convert_to_grayscale)
 
@@ -74,6 +73,8 @@ class DataHandler(QObject):
     def process_new_array(self, array: np.ndarray):
         now = time.time()
         if now - self.last_frame_time >= self.frame_interval:
+            if self.clip_size is None:
+                self.clip_size = QRect(0, 0, array.shape[1], array.shape[0])
             self.last_frame_time = now
             self.ndarray_available.emit(array)
 
@@ -94,10 +95,10 @@ class DataHandler(QObject):
             y_size, x_size = array.shape
         else:
             y_size, x_size, _ = array.shape
-        x_start = int(self.clip_size.left() * x_size)
-        x_stop = int(self.clip_size.right() * x_size)
-        y_start = int(self.clip_size.top() * y_size)
-        y_stop = int(self.clip_size.bottom() * y_size)
+        x_start = self.clip_size.left()
+        x_stop = self.clip_size.right() + 1
+        y_start = y_size - self.clip_size.bottom()
+        y_stop = y_size - self.clip_size.top()
         clipped_array = array[y_start:y_stop, x_start:x_stop]
 
         self.clipped_ndarray_available.emit(clipped_array)
@@ -106,3 +107,7 @@ class DataHandler(QObject):
             clipped_array = clipped_array.sum(axis=2)
 
         self.clipped_ndarray_bw_available.emit(clipped_array)
+
+    @pyqtSlot(QRectF)
+    def set_clip_size(self, rect):
+        self.clip_size = rect

@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import pyqtgraph as pg
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, qDebug
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, qDebug, QRectF, QRect
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout
 
 from ui.main_window import Ui_MainWindow
@@ -17,11 +17,16 @@ class MainWindow(QMainWindow):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        box = self.ui.graphicsView.addViewBox(row=1, col=1, lockAspect=True, enableMouse=False)
+        self.plot_box = self.ui.graphicsView.addViewBox(row=1, col=1, lockAspect=True, enableMouse=False, invertY=True)
         self.image_item = pg.ImageItem()
-        box.addItem(self.image_item)
+        self.image_item.setOpts(axisOrder='row-major')
+        self.plot_box.addItem(self.image_item)
         self.ui.graphicsView.ci.layout.setContentsMargins(0, 0, 0, 0)
         self.ui.graphicsView.ci.layout.setSpacing(0)
+
+        self.roi = None
+        self.ui.selectDataButton.toggled.connect(self.show_roi)
+        self.ui.resetSelectDataButton.clicked.connect(self.reset_roi)
 
         self.settings_layout = QHBoxLayout()
         self.settings_widget = QWidget()
@@ -44,10 +49,14 @@ class MainWindow(QMainWindow):
         self.camera_dialog.choose_first_camera()
 
         self.ui.actionShow_Settings.toggled.connect(self.show_settings)
+        self.ui.zoomButton.toggled.connect(self.enable_zoom)
+
+        self.ui.actionDraw_lines.toggled.connect(self.draw_lines)
+        self.hline = None
+        self.vline = None
 
     @pyqtSlot(np.ndarray)
     def show_ndarray(self, array):
-        array = np.rot90(array, 3)
         self.image_item.setImage(array)
 
     @pyqtSlot(QWidget)
@@ -79,3 +88,58 @@ class MainWindow(QMainWindow):
     @pyqtSlot(str)
     def show_message(self, message):
         self.ui.statusbar.showMessage(message, 5000)
+
+    @pyqtSlot(bool)
+    def show_roi(self, show):
+        if show:
+            rect = self.data_handler.clip_size
+            if rect is not None:
+                self.roi = pg.ROI([rect.left(), rect.top()], [rect.width(), rect.height()], pen=pg.mkPen(color='r'))
+                self.roi.addScaleHandle([0.5, 1], [0.5, 0.5])
+                self.roi.addScaleHandle([0, 0.5], [0.5, 0.5])
+                self.plot_box.addItem(self.roi)
+                self.roi.setZValue(10)
+                self.roi.sigRegionChangeFinished.connect(self.on_roi_changed)
+        else:
+            if self.roi is not None:
+                self.plot_box.removeItem(self.roi)
+                self.roi = None
+
+    @pyqtSlot()
+    def reset_roi(self):
+        self.ui.selectDataButton.setChecked(False)
+        self.show_roi(False)
+        self.data_handler.clip_size = None
+
+    @pyqtSlot()
+    def on_roi_changed(self):
+        if self.roi is not None:
+            pos = self.roi.pos()
+            size = self.roi.size()
+
+            rect = QRect(pos.x(), pos.y(), size.x(), size.y())
+            self.data_handler.set_clip_size(rect)
+
+    @pyqtSlot(bool)
+    def enable_zoom(self, enable):
+        self.plot_box.setMouseEnabled(enable, enable)
+        if enable:
+            self.show_message("Scroll up or down on image to zoom.")
+
+    @pyqtSlot(bool)
+    def draw_lines(self, draw):
+        if draw:
+            x_range, y_range = self.plot_box.viewRange()
+            self.hline = pg.InfiniteLine(pos=np.mean(y_range), angle=0, pen=pg.mkPen('r'))
+            self.vline = pg.InfiniteLine(pos=np.mean(x_range), angle=90, pen=pg.mkPen('r'))
+            self.hline.setZValue(10)
+            self.vline.setZValue(10)
+            self.plot_box.addItem(self.hline)
+            self.plot_box.addItem(self.vline)
+        else:
+            if self.hline is not None:
+                self.plot_box.removeItem(self.hline)
+                self.hline = None
+            if self.vline is not None:
+                self.plot_box.removeItem(self.vline)
+                self.vline = None

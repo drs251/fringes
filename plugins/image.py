@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 import plugin_canvas
 import plugins.libs.vortex_tools_core as vtc
+from plugin import Plugin
 
 name = "Interferogram viewer"
 description = "Shows the selected interferogram"
@@ -57,12 +58,8 @@ class Worker(QThread):
             sigma = parameters["sigma"]
             blur = parameters["blur"]
 
-            # convert frame to grayscale and rotate to give the correction orientation
-            data = frame.sum(axis=2).astype(np.float64)
-            data = np.rot90(data, axes=(1, 0))
-
             if homogenize:
-                data = vtc.homogenize(data, sigma, blur)
+                data = vtc.highpass(data, sigma, blur)
 
             # update the user interface:
             self.result.emit(data)
@@ -75,23 +72,21 @@ class Worker(QThread):
             self._mutex.unlock()
 
 
-class PolarizationPlugin(QObject):
+class PolarizationPlugin(Plugin):
     frameAvailable = pyqtSignal(np.ndarray, dict)
 
-    def __init__(self, parent, send_data_function):
-        super().__init__(parent)
+    def __init__(self, parent, name):
+        super().__init__(name)
         self.parameter_boxes = {}
+        self._name = name
 
-        self.parent = parent
-        self.send_data = send_data_function
-
-        self.canvas = plugin_canvas.PluginCanvas(parent, send_data_function)
+        self.canvas = plugin_canvas.PluginCanvas()
         self.canvas.set_name(name)
         self.layoutWidget = self.canvas.layoutWidget
-        self.canvas.resize(350, 400)
+        self.canvas.active.connect(self.set_active)
 
         self.layout = QHBoxLayout()
-        self.homogenizeCheckbox = QCheckBox("homogenize")
+        self.homogenizeCheckbox = QCheckBox("high-pass")
         self.layout.addWidget(self.homogenizeCheckbox)
         self.layout.addStretch(1)
         self.sigmaLabel = QLabel("sigma: ")
@@ -118,6 +113,7 @@ class PolarizationPlugin(QObject):
         self.main_plot.showAxis('bottom', False)
         self.main_plot.showAxis('left', False)
         self.mainImage = pg.ImageItem(lut=magma.getLookupTable())
+        self.mainImage.setOpts(axisOrder="row-major")
         self.main_plot.addItem(self.mainImage)
 
         self.workerThread = Worker()
@@ -127,37 +123,16 @@ class PolarizationPlugin(QObject):
     def setResult(self, image):
         self.mainImage.setImage(image)
 
-    def process_frame(self, frame: np.ndarray):
-        parameters = dict(homogenize=self.homogenizeCheckbox.isChecked(),
-                          sigma=self.sigmaBox.value(),
-                          blur=self.blurBox.value())
-        self.frameAvailable.emit(frame, parameters)
+    def process_clipped_ndarray_bw(self, frame: np.ndarray):
+        if self._active:
+            parameters = dict(homogenize=self.homogenizeCheckbox.isChecked(),
+                              sigma=self.sigmaBox.value(),
+                              blur=self.blurBox.value())
+            self.frameAvailable.emit(frame, parameters)
+
+    def get_widget(self):
+        return self.canvas
 
 
-plugin = None
-
-
-def init(parent=None, send_data_function=None):
-    """
-    Initialize the plugin. Build the window and create any necessary variables
-    :param parent: The main window can be provided here
-    :param send_data_function: A function that can start or stop data being sent
-    """
-    global plugin
-    plugin = PolarizationPlugin(parent, send_data_function)
-
-
-def process_frame(frame: np.ndarray):
-    """
-    Process a numpy array: take the data and convert it into a plot
-    :param frame: a numpy array
-    """
-    plugin.process_frame(frame)
-
-
-def show_window(show: bool = True):
-    """
-    Show or hide the plugin window
-    :param show: True or False
-    """
-    plugin.canvas.show_canvas(show)
+def get_instance(parent:QObject=None):
+    return PolarizationPlugin(parent=parent, name="Image viewer")
