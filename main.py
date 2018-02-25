@@ -1,14 +1,14 @@
 import sys
 
 from PyQt5 import QtWidgets
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtGui import QPalette, QColor, QIcon
 from PyQt5.QtCore import Qt
 
 from main_window import MainWindow
 
 
 app = QtWidgets.QApplication(sys.argv)
-
+app.setWindowIcon(QIcon('fringes.png'))
 app.setStyle("Fusion")
 
 dark_palette = QPalette()

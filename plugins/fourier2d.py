@@ -289,7 +289,7 @@ class FFTPlugin2(Plugin):
         self.blob_boxes["y"].setMaximum(300)
         self.blob_boxes["r"].setSingleStep(0.5)
         self.blob_boxes["r"].setDecimals(1)
-        self.blob_boxes["r"].setMaximum(30)
+        self.blob_boxes["r"].setMaximum(60)
 
         self.blob_label = QLabel("Blobs found: #")
         self.canvas.layout.insertWidget(3, self.blob_label)

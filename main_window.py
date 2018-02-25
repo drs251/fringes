@@ -17,6 +17,7 @@ class MainWindow(QMainWindow):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.ui.graphicsView.setBackground(pg.mkColor(0.3))
         self.plot_box = self.ui.graphicsView.addViewBox(row=1, col=1, lockAspect=True, enableMouse=False, invertY=True)
         self.image_item = pg.ImageItem()
         self.image_item.setOpts(axisOrder='row-major')
@@ -124,7 +125,7 @@ class MainWindow(QMainWindow):
     def enable_zoom(self, enable):
         self.plot_box.setMouseEnabled(enable, enable)
         if enable:
-            self.show_message("Scroll up or down on image to zoom.")
+            self.show_message("Scroll up or down on image to zoom. Right-click to reset.")
 
     @pyqtSlot(bool)
     def draw_lines(self, draw):

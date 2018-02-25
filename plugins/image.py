@@ -59,10 +59,10 @@ class Worker(QThread):
             blur = parameters["blur"]
 
             if homogenize:
-                data = vtc.highpass(data, sigma, blur)
+                frame = vtc.highpass(frame, sigma, blur)
 
             # update the user interface:
-            self.result.emit(data)
+            self.result.emit(frame)
 
             # see if new data is available, go to sleep if not
             self._mutex.lock()
@@ -108,10 +108,8 @@ class PolarizationPlugin(Plugin):
         # some image plots:
         magma = generatePgColormap('magma')
 
-        self.main_plot = self.layoutWidget.addPlot(title="Interferogram")
+        self.main_plot = self.layoutWidget.addViewBox(invertY=True)
         self.main_plot.setAspectLocked()
-        self.main_plot.showAxis('bottom', False)
-        self.main_plot.showAxis('left', False)
         self.mainImage = pg.ImageItem(lut=magma.getLookupTable())
         self.mainImage.setOpts(axisOrder="row-major")
         self.main_plot.addItem(self.mainImage)
