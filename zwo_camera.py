@@ -142,8 +142,6 @@ class ZwoCamera(Camera):
     def __init__(self, parent=None):
         super().__init__()
         self._camera = None
-        self._manualMode = False
-        self._active = False
 
         self.maxval = 2**16
 
@@ -168,7 +166,6 @@ class ZwoCamera(Camera):
         self._controls = self._camera.get_controls()
         self._info = self._camera.get_camera_property()
 
-        # TODO check if exposure and gain have to be set default values and auto disabled
         self._camera.set_image_type(zwoasi.ASI_IMG_RAW16)
         self._camera.set_control_value(zwoasi.ASI_GAIN, 20)
         self._camera.set_control_value(zwoasi.ASI_EXPOSURE, 3000)
