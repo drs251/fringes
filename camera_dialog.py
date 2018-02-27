@@ -1,3 +1,5 @@
+from python_zwoasi import zwoasi
+
 from collections import OrderedDict, namedtuple
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, qDebug, QSettings
@@ -45,13 +47,14 @@ class CameraDialog(QDialog):
             for num in ZwoCamera.get_available_cameras():
                 self.available_cameras.append(self.Available_Camera(name="ZWO camera", class_=ZwoCamera,
                                                                     kwargs=dict(cam_number=num)))
-        except zwoasi.ZWO_Error:
-            pass
+        except (zwoasi.ZWO_Error, OSError) as err:
+            qDebug(str(err))
 
         qcameras = QCameraInfo.availableCameras()
         try:
             tiscameras = TisCamera.get_available_cameras()
         except NameError:
+            qDebug("Unable to open TIS camera interface.")
             tiscameras = []
         for device in qcameras:
             if device in tiscameras:
