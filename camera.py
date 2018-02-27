@@ -1,6 +1,7 @@
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 import numpy as np
 from PyQt5.QtWidgets import QWidget
+import re
 
 
 class Camera(QObject):
@@ -72,3 +73,20 @@ class Camera(QObject):
 
     def set_gain(self, gain):
         return NotImplementedError()
+
+    @staticmethod
+    def read_pid_settings(cam_name):
+        try:
+            with open("./initial_pid_values.cfg") as file:
+                res = []
+                while True:
+                    line = file.readline().strip()
+                    if line == cam_name:
+                        break
+                for param in ["P", "I", "D"]:
+                    line = file.readline().strip()
+                    match = re.match(r"^{}: (\d+.\d+)$".format(param), line)
+                    res.append(float(match[1]))
+                return res
+        except Exception as err:
+            print(err)

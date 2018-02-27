@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>941</width>
-    <height>725</height>
+    <height>527</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -148,6 +148,7 @@
    <addaction name="actionSave_image"/>
    <addaction name="actionDraw_lines"/>
    <addaction name="actionShow_Settings"/>
+   <addaction name="actionTune_camera_parameters"/>
    <addaction name="actionQuit"/>
   </widget>
   <action name="actionChoose_camera">
@@ -202,6 +203,11 @@
    </property>
    <property name="text">
     <string>Show Settings</string>
+   </property>
+  </action>
+  <action name="actionTune_camera_parameters">
+   <property name="text">
+    <string>Camera parameters</string>
    </property>
   </action>
  </widget>

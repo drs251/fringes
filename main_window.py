@@ -1,8 +1,8 @@
 import numpy as np
 import time
 import pyqtgraph as pg
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, qDebug, QRectF, QRect
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, qDebug, QRectF, QRect, Qt
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QDialog, QGridLayout, QLabel, QDoubleSpinBox, QAction
 
 from ui.main_window import Ui_MainWindow
 from camera_dialog import CameraDialog
@@ -12,11 +12,56 @@ from plugin_dialog import PluginDialog
 
 class MainWindow(QMainWindow):
 
+    class PidDialog(QDialog):
+        values_changed = pyqtSignal(float, float, float)
+
+        def __init__(self, parent=None):
+            super().__init__(parent=parent)
+            self.setWindowTitle("PID settings")
+            self.setMinimumWidth(150)
+            # self.setWindowFlags(Qt.WindowStaysOnTopHint)
+            layout = QGridLayout()
+            p_label = QLabel("P")
+            layout.addWidget(p_label, 0, 0)
+            self.p_spinbox = QDoubleSpinBox()
+            self.p_spinbox.setSingleStep(0.1)
+            self.p_spinbox.valueChanged.connect(self._emit_new_values)
+            layout.addWidget(self.p_spinbox, 0, 1)
+            i_label = QLabel("I")
+            layout.addWidget(i_label, 1, 0)
+            self.i_spinbox = QDoubleSpinBox()
+            self.i_spinbox.setSingleStep(0.1)
+            self.i_spinbox.valueChanged.connect(self._emit_new_values)
+            layout.addWidget(self.i_spinbox, 1, 1)
+            d_label = QLabel("D")
+            layout.addWidget(d_label, 2, 0)
+            self.d_spinbox = QDoubleSpinBox()
+            self.d_spinbox.setSingleStep(0.1)
+            self.d_spinbox.valueChanged.connect(self._emit_new_values)
+            layout.addWidget(self.d_spinbox, 2, 1)
+            self.setLayout(layout)
+
+        def _emit_new_values(self):
+            p = self.p_spinbox.value()
+            i = self.i_spinbox.value()
+            d = self.d_spinbox.value()
+            self.values_changed.emit(p, i, d)
+
+        def set_values(self, p, i, d):
+            self.p_spinbox.setValue(p)
+            self.i_spinbox.setValue(i)
+            self.d_spinbox.setValue(d)
+
+        def closeEvent(self, event):
+            event.accept()
+            self.deleteLater()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
         self.ui.graphicsView.setBackground(pg.mkColor(0.3))
         self.plot_box = self.ui.graphicsView.addViewBox(row=1, col=1, lockAspect=True, enableMouse=False, invertY=True)
         self.image_item = pg.ImageItem()
@@ -48,6 +93,7 @@ class MainWindow(QMainWindow):
         self.ui.actionChoose_camera.triggered.connect(self.camera_dialog.choose_camera)
         self.camera_dialog.camera_changed.connect(self.data_handler.change_camera)
         self.camera_dialog.choose_first_camera()
+        self.ui.actionTune_camera_parameters.triggered.connect(self.tune_pid)
 
         self.ui.actionShow_Settings.toggled.connect(self.show_settings)
         self.ui.zoomButton.toggled.connect(self.enable_zoom)
@@ -144,3 +190,22 @@ class MainWindow(QMainWindow):
             if self.vline is not None:
                 self.plot_box.removeItem(self.vline)
                 self.vline = None
+
+    def tune_pid(self):
+        try:
+            dialog = self.PidDialog(parent=self)
+            cam = self.data_handler.camera
+            dialog.set_values(*cam.get_pid())
+            dialog.values_changed.connect(self.set_pid_values)
+            dialog.show()
+            dialog.raise_()
+            dialog.activateWindow()
+        except Exception as err:
+            print(str(err))
+
+    def set_pid_values(self, p, i, d):
+        try:
+            cam = self.data_handler.camera
+            cam.set_pid(p, i, d)
+        except:
+            pass

@@ -1,5 +1,5 @@
 from python_zwoasi import zwoasi
-from PyQt5.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, pyqtSlot, qDebug, QObject, QTimer
+from PyQt5.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, pyqtSlot, qDebug, QObject, QTimer, QSettings
 import numpy as np
 
 from camera import Camera
@@ -70,9 +70,9 @@ class ZwoCamera(Camera):
             self._min_exposure_time = None
             self._max_exposure_time = None
             self._setpoint = 85.
-            self._Kp = 0.5
-            self._Kd = 10
-            self._Ti = 0.3
+            self.Kp = 0.5
+            self.Kd = 10
+            self.Ki = 0.3
             self._interval = 200
             self._timer = QTimer()
             self._timer.timeout.connect(self._run)
@@ -103,10 +103,10 @@ class ZwoCamera(Camera):
 
         def _run(self):
             error = self._saturation - self._setpoint
-            ui = self._piUi + error * self._interval / 1000 * self._Ti
+            ui = self._piUi + error * self._interval / 1000 * self.Ki
             self._piUi = ui
-            ud = self._last_error / self._interval * self._Kd
-            output = - self._Kp * (error + ui + ud)
+            ud = self._last_error / self._interval * self.Kd
+            output = - self.Kp * (error + ui + ud)
             self._last_error = error
 
             previous_gain = self._gain
@@ -304,3 +304,36 @@ class ZwoCamera(Camera):
             raise ValueError("Gain parameter {} is outside of allowed range {}".format(true_gain, rng))
         self._camera.set_control_value(zwoasi.ASI_GAIN, true_gain)
         self.gain_changed.emit(gain)
+
+    def get_pid(self):
+        p = self.auto_settings_thread.Kp
+        i = self.auto_settings_thread.Ki
+        d = self.auto_settings_thread.Kd
+        return p, i, d
+
+    def set_pid(self, p, i, d):
+        self.auto_settings_thread.Kp = p
+        self.auto_settings_thread.Ki = i
+        self.auto_settings_thread.Kd = d
+        self.save_pid_values(p, i, d)
+        print("pid:", p, i, i)
+
+    def load_pid_values(self):
+        settings = QSettings("Fringes", "Fringes")
+        settings.beginGroup("ZwoCamera")
+        if settings.value("P") is not None:
+            p = settings.value("P")
+            i = settings.value("I")
+            d = settings.value("D")
+        else:
+            p, i, d = self.read_pid_settings("ZwoCamera")
+        settings.endGroup("ZwoCamera")
+        return p, i, d
+
+    def save_pid_values(self, p, i, d):
+        settings = QSettings("Fringes", "Fringes")
+        settings.beginGroup("ZwoCamera")
+        settings.setValue("P", p)
+        settings.setValue("I", i)
+        settings.setValue("D", d)
+        settings.endGroup("ZwoCamera")

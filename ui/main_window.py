@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(941, 725)
+        MainWindow.resize(941, 527)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
@@ -110,10 +110,13 @@ class Ui_MainWindow(object):
         icon4.addPixmap(QtGui.QPixmap(":/icons/ui/cog-8x.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionShow_Settings.setIcon(icon4)
         self.actionShow_Settings.setObjectName("actionShow_Settings")
+        self.actionTune_camera_parameters = QtWidgets.QAction(MainWindow)
+        self.actionTune_camera_parameters.setObjectName("actionTune_camera_parameters")
         self.toolBar.addAction(self.actionChoose_camera)
         self.toolBar.addAction(self.actionSave_image)
         self.toolBar.addAction(self.actionDraw_lines)
         self.toolBar.addAction(self.actionShow_Settings)
+        self.toolBar.addAction(self.actionTune_camera_parameters)
         self.toolBar.addAction(self.actionQuit)
 
         self.retranslateUi(MainWindow)
@@ -137,6 +140,7 @@ class Ui_MainWindow(object):
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
         self.actionDraw_lines.setText(_translate("MainWindow", "Draw lines"))
         self.actionShow_Settings.setText(_translate("MainWindow", "Show Settings"))
+        self.actionTune_camera_parameters.setText(_translate("MainWindow", "Camera parameters"))
 
 from pyqtgraph import GraphicsLayoutWidget
 import resources_rc

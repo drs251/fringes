@@ -1,6 +1,6 @@
 import numpy as np
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QTimer, QObject
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QTimer, QObject, QSettings
 from PyQt5.QtMultimedia import QCameraInfo
 
 from camera_settings_widget import CameraSettingsWidget
@@ -31,9 +31,9 @@ class TisCamera(QtCamera):
             self._min_exposure_time = None
             self._max_exposure_time = None
             self._setpoint = 85.
-            self._Kp = 0.5
-            self._Kd = 10
-            self._Ti = 0.3
+            self.Kp = None
+            self.Kd = None
+            self.Ki = None
             self._interval = 200
             self._timer = QTimer()
             self._timer.timeout.connect(self._run)
@@ -64,10 +64,10 @@ class TisCamera(QtCamera):
 
         def _run(self):
             error = self._saturation - self._setpoint
-            ui = self._piUi + error * self._interval / 1000 * self._Ti
+            ui = self._piUi + error * self._interval / 1000 * self.Ki
             self._piUi = ui
-            ud = self._last_error / self._interval * self._Kd
-            output = - self._Kp * (error + ui + ud)
+            ud = self._last_error / self._interval * self.Kd
+            output = - self.Kp * (error + ui + ud)
             self._last_error = error
 
             previous_gain = self._gain
@@ -125,6 +125,7 @@ class TisCamera(QtCamera):
         self.auto_settings_thread.set_exposure_time(self.get_exposure())
         self.auto_settings_thread.set_gain_range(self.get_gain_range())
         self.auto_settings_thread.set_exposure_range(self.get_exposure_range())
+        self.set_pid(*self.load_pid_values())
         self.gain_changed.connect(self.auto_settings_thread.set_gain)
         self.exposure_time_changed.connect(self.auto_settings_thread.set_exposure_time)
         self.saturation_changed.connect(self.auto_settings_thread.set_saturation)
@@ -189,6 +190,41 @@ class TisCamera(QtCamera):
 
     def set_exposure(self, exposure):
         self.settings.set_exposure(exposure)
+        self.exposure_time_changed.emit(exposure)
 
     def set_gain(self, gain):
         self.settings.set_gain(gain)
+        self.gain_changed.emit(gain)
+
+    def get_pid(self):
+        p = self.auto_settings_thread.Kp
+        i = self.auto_settings_thread.Ki
+        d = self.auto_settings_thread.Kd
+        return p, i, d
+
+    def set_pid(self, p, i, d):
+        self.auto_settings_thread.Kp = p
+        self.auto_settings_thread.Ki = i
+        self.auto_settings_thread.Kd = d
+        self.save_pid_values(p, i, d)
+        print("pid:", p, i, d)
+
+    def load_pid_values(self):
+        settings = QSettings("Fringes", "Fringes")
+        settings.beginGroup("TisCamera")
+        if settings.value("P") is not None:
+            Kp = float(settings.value("P"))
+            Ki = float(settings.value("I"))
+            Kd = float(settings.value("D"))
+        else:
+            Kp, Ki, Kd = self.read_pid_settings("TisCamera")
+        settings.endGroup()
+        return Kp, Ki, Kd
+
+    def save_pid_values(self, p, i, d):
+        settings = QSettings("Fringes", "Fringes")
+        settings.beginGroup("TisCamera")
+        settings.setValue("P", p)
+        settings.setValue("I", i)
+        settings.setValue("D", d)
+        settings.endGroup()
