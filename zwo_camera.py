@@ -1,5 +1,5 @@
-import zwoasi
-from PyQt5.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, pyqtSlot, qDebug, QWaitCondition, QObject, QTimer
+from python_zwoasi import zwoasi
+from PyQt5.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, pyqtSlot, qDebug, QObject, QTimer
 import numpy as np
 
 from camera import Camera
@@ -11,8 +11,6 @@ def clamp(x, minn, maxx):
 
 
 class ZwoCamera(Camera):
-
-    ZWOLIB_PATH = "./zwoasi/libASICamera2.dylib"
 
     class CaptureThread(QThread):
         ndarray_available = pyqtSignal(np.ndarray)
@@ -139,7 +137,7 @@ class ZwoCamera(Camera):
     gain_changed = pyqtSignal(float)
     saturation_changed = pyqtSignal(int)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, cam_number=0):
         super().__init__()
         self._camera = None
 
@@ -148,18 +146,7 @@ class ZwoCamera(Camera):
         self._last_saturations = []
         self._saturation = 0
 
-        try:
-            zwoasi.init(self.ZWOLIB_PATH)
-        except zwoasi.ZWO_Error:
-            # ignore, if the library is already initialized
-            pass
-
-        num_cameras = zwoasi.get_num_cameras()
-
-        if num_cameras > 0:
-            self._camera = zwoasi.Camera(0)
-        else:
-            raise RuntimeError("No ZWO cameras found")
+        self._camera = zwoasi.Camera(cam_number)
 
         self._active = True
         self._manualMode = True
@@ -242,12 +229,15 @@ class ZwoCamera(Camera):
 
     @staticmethod
     def get_number_cameras():
-        try:
-            zwoasi.init(ZwoCamera.ZWOLIB_PATH)
-        except zwoasi.ZWO_Error:
-            pass
+        return zwoasi.get_num_cameras()
 
-        return  zwoasi.get_num_cameras()
+    @staticmethod
+    def get_available_cameras():
+        return list(range(ZwoCamera.get_number_cameras()))
+
+    @staticmethod
+    def init_library(path):
+        zwoasi.init(path)
 
     def _clear_interface(self):
         pass

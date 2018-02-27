@@ -1,6 +1,6 @@
 from collections import OrderedDict, namedtuple
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, qDebug
+from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, qDebug, QSettings
 from PyQt5.QtMultimedia import QCameraInfo
 
 try:
@@ -9,14 +9,11 @@ try:
 except ModuleNotFoundError:
     pass
 from ui.camera_dialog import Ui_CameraDialog
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from qt_camera import QtCamera
 from camera import Camera
 from zwo_camera import ZwoCamera
-import zwoasi
-
-# TODO: this should also handle TisCameras in the future (i.e. the ability to control the settings)
 
 
 class CameraDialog(QDialog):
@@ -31,11 +28,25 @@ class CameraDialog(QDialog):
         self.ui = Ui_CameraDialog()
         self.ui.setupUi(self)
 
+        self.ui.libraryButton.clicked.connect(self.choose_library_files)
+
+        settings = QSettings("Fringes", "Fringes")
+
+        zwo_library_path = settings.value("zwo_library_path")
+        if zwo_library_path is None:
+            zwo_library_path = self.get_zwo_library_path()
+            settings.setValue("zwo_library_path", zwo_library_path)
+
         self._current_camera = None
 
         self.available_cameras = []
-        if ZwoCamera.get_number_cameras() > 0:
-            self.available_cameras.append(self.Available_Camera(name="ZWO camera", class_=ZwoCamera, kwargs=dict()))
+        try:
+            ZwoCamera.init_library(zwo_library_path)
+            for num in ZwoCamera.get_available_cameras():
+                self.available_cameras.append(self.Available_Camera(name="ZWO camera", class_=ZwoCamera,
+                                                                    kwargs=dict(cam_number=num)))
+        except zwoasi.ZWO_Error:
+            pass
 
         qcameras = QCameraInfo.availableCameras()
         try:
@@ -70,3 +81,16 @@ class CameraDialog(QDialog):
             self.camera_changed.emit(new_camera)
         except:
             pass
+
+    def get_zwo_library_path(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Locate the ZWO camera SDK library file libASICamera2",
+                                              options=QFileDialog.DontUseNativeDialog)
+        if path is None:
+            path = ""
+        return path
+
+    def choose_library_files(self):
+        zwo_library_path = self.get_zwo_library_path()
+        settings = QSettings("Fringes", "Fringes")
+        settings.setValue("zwo_library_path", zwo_library_path)
+        QMessageBox.information(self, "Restart", "Fringes must be restarted for the changes to take effect.")

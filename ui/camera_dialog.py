@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/camera_dialog.ui'
+# Form implementation generated from reading ui file 'camera_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -12,20 +12,28 @@ class Ui_CameraDialog(object):
     def setupUi(self, CameraDialog):
         CameraDialog.setObjectName("CameraDialog")
         CameraDialog.resize(430, 220)
-        self.gridLayout = QtWidgets.QGridLayout(CameraDialog)
-        self.gridLayout.setObjectName("gridLayout")
+        self.verticalLayout = QtWidgets.QVBoxLayout(CameraDialog)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
         self.label = QtWidgets.QLabel(CameraDialog)
         self.label.setObjectName("label")
-        self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
+        self.horizontalLayout.addWidget(self.label)
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout.addItem(spacerItem)
+        self.libraryButton = QtWidgets.QPushButton(CameraDialog)
+        self.libraryButton.setObjectName("libraryButton")
+        self.horizontalLayout.addWidget(self.libraryButton)
+        self.verticalLayout.addLayout(self.horizontalLayout)
         self.listView = QtWidgets.QListView(CameraDialog)
         self.listView.setObjectName("listView")
-        self.gridLayout.addWidget(self.listView, 1, 0, 1, 1)
+        self.verticalLayout.addWidget(self.listView)
         self.buttonBox = QtWidgets.QDialogButtonBox(CameraDialog)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setCenterButtons(False)
         self.buttonBox.setObjectName("buttonBox")
-        self.gridLayout.addWidget(self.buttonBox, 2, 0, 1, 1)
+        self.verticalLayout.addWidget(self.buttonBox)
 
         self.retranslateUi(CameraDialog)
         self.buttonBox.accepted.connect(CameraDialog.accept)
@@ -36,6 +44,7 @@ class Ui_CameraDialog(object):
         _translate = QtCore.QCoreApplication.translate
         CameraDialog.setWindowTitle(_translate("CameraDialog", "Dialog"))
         self.label.setText(_translate("CameraDialog", "Choose a camera:"))
+        self.libraryButton.setText(_translate("CameraDialog", "choose library locations"))
 
 
 if __name__ == "__main__":
