@@ -8,8 +8,8 @@ from PyQt5.QtMultimedia import QCameraInfo
 try:
     # Windows only
     from tis_camera import TisCamera
-except ModuleNotFoundError:
-    pass
+except ModuleNotFoundError as err:
+    qDebug(str(err))
 from ui.camera_dialog import Ui_CameraDialog
 from PyQt5.QtWidgets import QDialog, QFileDialog, QMessageBox
 
@@ -39,13 +39,13 @@ class CameraDialog(QDialog):
             zwo_library_path = self.get_zwo_library_path()
             settings.setValue("zwo_library_path", zwo_library_path)
 
-        self._current_camera = None
+        self.current_camera = None
 
         self.available_cameras = []
         try:
             ZwoCamera.init_library(zwo_library_path)
             for num in ZwoCamera.get_available_cameras():
-                self.available_cameras.append(self.Available_Camera(name="ZWO camera", class_=ZwoCamera,
+                self.available_cameras.append(self.Available_Camera(name="ZWO camera #{}".format(num), class_=ZwoCamera,
                                                                     kwargs=dict(cam_number=num)))
         except (zwoasi.ZWO_Error, OSError) as err:
             qDebug(str(err))
@@ -54,13 +54,14 @@ class CameraDialog(QDialog):
         try:
             tiscameras = TisCamera.get_available_cameras()
         except NameError:
+            raise
             qDebug("Unable to open TIS camera interface.")
             tiscameras = []
         for device in qcameras:
             if device in tiscameras:
                 self.available_cameras.append(self.Available_Camera(name=device.description(), class_=TisCamera,
                                                                     kwargs=dict(device=device)))
-            else:
+            elif not device.description().startswith("ASI"):
                 self.available_cameras.append(self.Available_Camera(name=device.description(), class_=QtCamera,
                                                                     kwargs=dict(device=device)))
         names = [cam.name for cam in self.available_cameras]
@@ -73,15 +74,16 @@ class CameraDialog(QDialog):
         if result == QDialog.Accepted:
             index = self.ui.listView.currentIndex().row()
             cam = self.available_cameras[index]
-            new_camera = cam.class_(**cam.kwargs)
-            self.camera_changed.emit(new_camera)
+            qDebug(str(cam.kwargs))
+            self.current_camera = cam.class_(**cam.kwargs)
+            self.camera_changed.emit(self.current_camera)
 
     @pyqtSlot()
     def choose_first_camera(self):
         try:
             cam = self.available_cameras[0]
-            new_camera = cam.class_(**cam.kwargs)
-            self.camera_changed.emit(new_camera)
+            self.current_camera = cam.class_(**cam.kwargs)
+            self.camera_changed.emit(self.current_camera)
         except:
             pass
 

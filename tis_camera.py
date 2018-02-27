@@ -100,7 +100,7 @@ class TisCamera(QtCamera):
         res = []
         for cam in qcameras:
             # pretty ugly hack...
-            if cam.name().startswith("DMK"):
+            if cam.description().startswith("DMK"):
                 res.append(cam)
         return res
 
@@ -109,7 +109,7 @@ class TisCamera(QtCamera):
     saturation_changed = pyqtSignal(int)
 
     def __init__(self, parent=None, device=None):
-        super().__init__(self, parent=parent, device=device)
+        super().__init__(parent=parent, device=device)
         self._manualMode = False
         self._active = False
 

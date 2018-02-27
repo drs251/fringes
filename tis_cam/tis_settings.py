@@ -1,9 +1,8 @@
 import win32com.client as com
 from PyQt5.QtCore import qDebug
-from device_settings import DeviceSettings
 
 
-class TisSettings(DeviceSettings):
+class TisSettings:
 
     # to convert the values from TIS into nice units:
     _gain_factor = 10
@@ -11,17 +10,15 @@ class TisSettings(DeviceSettings):
 
     def __init__(self):
         self._camera = com.Dispatch("IC.ICImagingControl3")
-        self._manualMode = False
-        self._active = False
 
         devices = self._get_available_devices()
-        if len(devices) > 0:
-            self._camera.DeviceUniqueName = self._get_unique_name(devices[0])
-            if not self._valid:
-                qDebug("TisSettings: Could not get valid device.")
-            else:
-                self._active = True
-                self._manualMode = True
+        if len(devices) <= 0:
+            raise RuntimeError("No TIS cameras available!")
+        self._camera.DeviceUniqueName = self._get_unique_name(devices[0])
+        if not self._valid:
+            raise RuntimeError("TisSettings: Could not get valid device.")
+        self._active = True
+        self._manualMode = True
 
     def setSourceFromDeviceId(self, devId):
         pass
@@ -54,43 +51,34 @@ class TisSettings(DeviceSettings):
         if not self._camera.DeviceValid:
             raise RuntimeError("invalid device")
 
-    @DeviceSettings._ensure_valid
     def get_exposure(self):
         return self._camera.Exposure / self._exposure_factor
 
-    @DeviceSettings._ensure_valid
     def get_exposure_range(self):
         rng = self._camera.ExposureRange
         scaled_rng = [bound / self._exposure_factor for bound in rng]
         return scaled_rng
 
-    @DeviceSettings._ensure_valid
     def is_auto_exposure(self):
         return self._camera.ExposureAuto
 
-    @DeviceSettings._ensure_valid
     def set_auto_exposure(self, auto):
         self._camera.ExposureAuto = auto
 
-    @DeviceSettings._ensure_valid
     def is_auto_gain(self):
         return self._camera.GainAuto
 
-    @DeviceSettings._ensure_valid
     def set_auto_gain(self, auto):
         self._camera.GainAuto = auto
 
-    @DeviceSettings._ensure_valid
     def get_gain(self):
         return self._camera.Gain / self._gain_factor
 
-    @DeviceSettings._ensure_valid
     def get_gain_range(self):
         rng = self._camera.GainRange
         scaled_rng = [bound / self._exposure_factor for bound in rng]
         return scaled_rng
 
-    @DeviceSettings._ensure_valid
     def set_exposure(self, exposure):
         exposure = int(exposure * self._exposure_factor)
         rng = self._camera.ExposureRange
@@ -99,7 +87,6 @@ class TisSettings(DeviceSettings):
         self.set_auto_exposure(False)
         self._camera.Exposure = exposure
 
-    @DeviceSettings._ensure_valid
     def set_gain(self, gain):
         gain = int(gain * self._gain_factor)
         rng = self._camera.GainRange
