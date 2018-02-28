@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>ui/dial-8x.png</file>
     <file>ui/cog-8x.png</file>
     <file>ui/camera-slr-8x.png</file>
     <file>ui/circle-x-8x.png</file>

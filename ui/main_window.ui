@@ -206,6 +206,10 @@
    </property>
   </action>
   <action name="actionTune_camera_parameters">
+   <property name="icon">
+    <iconset resource="../resources.qrc">
+     <normaloff>:/icons/ui/dial-8x.png</normaloff>:/icons/ui/dial-8x.png</iconset>
+   </property>
    <property name="text">
     <string>Camera parameters</string>
    </property>
