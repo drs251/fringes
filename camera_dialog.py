@@ -54,7 +54,6 @@ class CameraDialog(QDialog):
         try:
             tiscameras = TisCamera.get_available_cameras()
         except NameError:
-            raise
             qDebug("Unable to open TIS camera interface.")
             tiscameras = []
         for device in qcameras:

@@ -250,9 +250,6 @@ class RecorderPlugin(Plugin):
         filename, _ = QFileDialog.getSaveFileName(caption="Save image", directory=self.filename,
                                                   filter="netCDF file (*.nc)",
                                                   options=QFileDialog.DontUseNativeDialog)
-        # folder = QFileDialog.getExistingDirectory(self.canvas, "Choose file to save images",
-        #                                           self.folder,
-        #                                           QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
         if filename != "":
             if not filename.endswith(".nc"):
                 filename += ".nc"
