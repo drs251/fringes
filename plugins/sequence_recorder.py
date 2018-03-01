@@ -23,26 +23,6 @@ description = "Saves a sequence of images"
 # this does the calculations in another thread:
 class RecorderWorker(QObject):
 
-    class FileWriter(QObject):
-
-        success = pyqtSignal(bool)
-
-        def __init__(self, arrays, filename):
-            super().__init__()
-            self._arrays = arrays
-            self._filename = filename
-
-        def write_file(self):
-            try:
-                arrays = xr.concat(self._arrays, "sequence_number")
-                arrays.encoding['zlib'] = True
-                if os.path.isfile(self._filename):
-                    os.remove(self._filename)
-                arrays.to_netcdf(path=self._filename)
-                self.success.emit(True)
-            except:
-                self.success.emit(False)
-
     imagesRecorded = pyqtSignal(int)
     imagesSaved = pyqtSignal(str)
     message = pyqtSignal(str)
@@ -54,68 +34,94 @@ class RecorderWorker(QObject):
         self.abort = False
         self._total_images = 0
         self._images_recorded = 0
+        self._current_average = 0
+        self._total_averages = 0
         self._recording = False
         self._filename = "/home"
         self._rate = None
         self._nextFrameTime = None
-        self._arrays = []
+        self._array = None
+        self._temp_array = None
         self.file_writer = None
         self.write_thread = None
 
     def processFrame(self, frame):
-        if self._recording and time.time() >= self._nextFrameTime:
-            xarr = xarray_from_frame(frame)
-            xarr = xarr.expand_dims("sequence_number")
-            xarr.coords["sequence_number"] = [self._images_recorded]
-            self._arrays.append(xarr)
-            self._images_recorded += 1
-            self.imagesRecorded.emit(self._images_recorded)
-            if self._images_recorded >= self._total_images:
-                self.stopRecording()
+        if self._recording:
+            if time.time() < self._nextFrameTime:
+                # see if there is still averaging to do:
+                if self._current_average < self._total_averages:
+                    self.record_average(frame)
             else:
-                self._nextFrameTime += 1 / self._rate
+                # time for the next step:
+                if len(self._temp_array.shape) < 3:
+                    # only one average:
+                    array = xarray_from_frame(self._temp_array)
+                else:
+                    # averaging for one sequence image:
+                    array = xarray_from_frame(self._temp_array.mean(axis=2))
+                self._temp_array = None
+                self._current_average = 0
+                array = array.expand_dims("sequence_number")
+                array.coords["sequence_number"] = [self._images_recorded]
+                if self._array is None:
+                    self._array = array
+                else:
+                    self._array = xr.concat([self._array, array], "sequence_number")
+                self._images_recorded += 1
+                self.imagesRecorded.emit(self._images_recorded)
+                print("FRAME {} of {}".format(self._images_recorded, self._total_images))
+                if self._images_recorded >= self._total_images:
+                    self.stopRecording()
+                else:
+                    self._nextFrameTime += 1 / self._rate
+                    self.record_average(frame)
 
-    def saveArrays(self):
+    def record_average(self, frame):
+        if self._temp_array is None:
+            self._temp_array = frame
+        else:
+            self._temp_array = np.dstack((self._temp_array, frame))
+        self._current_average += 1
+        print("recorded average {} of {}".format(self._current_average, self._total_averages))
+
+
+    def saveArray(self):
         self.message.emit("writing images...")
         self.imagesSaved.emit("saving...")
-        self.file_writer = self.FileWriter(self._arrays, self._filename)
-        self.write_thread = QThread()
-        self.file_writer.success.connect(self.writing_finished)
-        self.file_writer.moveToThread(self.write_thread)
-        self.write_thread.started.connect(self.file_writer.write_file)
-        self.write_thread.start()
-
-    def writing_finished(self, success):
-        if success:
+        try:
+            self._array.encoding['zlib'] = True
+            if os.path.isfile(self._filename):
+                os.remove(self._filename)
+            self._array.to_netcdf(path=self._filename)
             self.imagesSaved.emit("yes")
             self.message.emit("{} successfully saved.".format(self._filename))
-        else:
+        except:
             self.imagesSaved.emit("ERROR!")
             self.message.emit("Error writing sequence data!")
 
-    def startRecording(self, filename, rate, total_images):
+    def startRecording(self, filename, rate, total_images, averages):
         self._filename = filename
         self._rate = rate
         self._total_images = total_images
         self._nextFrameTime = time.time() + 1 / rate
         self._images_recorded = 0
-        self._images_saved = 0
-        self._arrays = []
-        try:
-            with open(filename.replace(".netcdf", "_config.txt"), 'w') as f:
-                f.write("Start time: " + str(datetime.datetime.fromtimestamp(time.time())))
-                f.write("\nFrame rate: {} / s".format(rate))
+        self._current_average = 0
+        self._total_averages = averages
+        self._array = None
+        with open(filename.replace(".netcdf", "_config.txt"), 'w') as f:
+            f.write("Start time: " + str(datetime.datetime.fromtimestamp(time.time())))
+            f.write("\nFrame rate: {} / s".format(rate))
+            f.write("\nTotal frames: {}".format(total_images))
+            f.write("\nAverages / frame: {}".format(averages))
 
-            self.imagesSaved.emit("not yet")
-            self._recording = True
-        except:
-            pass
+        self.imagesSaved.emit("not yet")
+        self._recording = True
 
     def stopRecording(self):
         if self._recording:
             self._recording = False
             self.finished.emit()
-            self.saveArrays()
+            self.saveArray()
 
 
 class RecorderPlugin(Plugin):
@@ -164,6 +170,7 @@ class RecorderPlugin(Plugin):
 
         self.numberImagesSpinBox = QSpinBox()
         self.numberImagesSpinBox.setValue(10)
+        self.numberImagesSpinBox.setMinimum(1)
         self.numberImagesSpinBox.setMaximum(9999)
         self.numberImagesSpinBox.valueChanged.connect(self.updateTotalTime)
         self.numberImagesGroupBox = QGroupBox("Number of images")
@@ -172,6 +179,17 @@ class RecorderPlugin(Plugin):
         numberImages_layout.addStretch(1)
         self.numberImagesGroupBox.setLayout(numberImages_layout)
         main_layout.addWidget(self.numberImagesGroupBox)
+
+        self.averagesSpinBox = QSpinBox()
+        self.averagesSpinBox.setValue(3)
+        self.averagesSpinBox.setMinimum(1)
+        self.averagesSpinBox.setMaximum(9999)
+        self.averagesGroupBox = QGroupBox("Averages per images")
+        averages_layout = QHBoxLayout()
+        averages_layout.addWidget(self.averagesSpinBox)
+        averages_layout.addStretch(1)
+        self.averagesGroupBox.setLayout(averages_layout)
+        main_layout.addWidget(self.averagesGroupBox)
 
         self.recorded_images_label = QLabel("Images recorded: 0")
         main_layout.addWidget(self.recorded_images_label)
@@ -220,9 +238,13 @@ class RecorderPlugin(Plugin):
     def startRecording(self):
         self.startTime = time.time()
         self.updateTime()
-        self.timer.start(1000)
         self._total_images = self.numberImagesSpinBox.value()
-        self.recorder_worker.startRecording(self.filename, self.rateSpinBox.value(), self._total_images)
+        try:
+            self.recorder_worker.startRecording(self.filename, self.rateSpinBox.value(), self._total_images,
+                                                self.averagesSpinBox.value())
+            self.timer.start(1000)
+        except Exception as err:
+            self.message.emit("ERROR: Could not start recording: {}".format(str(err)))
 
     def updateImagesRecorded(self, number):
         self.recorded_images_label.setText("Images recorded: {}".format(number))
