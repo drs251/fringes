@@ -5,6 +5,7 @@ import pyqtgraph as pg
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import time
 
 import plugin_canvas
 import plugins.libs.vortex_tools_core as vtc
@@ -39,17 +40,21 @@ class FFTWorker(QThread):
         self.parameters = None
         self.abort = False
         self.transform_size = 300
+        self.last_time = 0
+        self.time_interval = 0.5
 
     def processFrame(self, frame, parameters):
-        self._mutex.lock()
-        self.frame = frame
-        self.parameters = parameters
-        self._mutex.unlock()
+        # limit frame rate to keep interface responsive
+        if time.time() > self.last_time + self.time_interval:
+            print("sending frame")
+            self.last_time = time.time()
+            self._mutex.lock()
+            self.frame = frame
+            self.parameters = parameters
+            self._mutex.unlock()
 
-        if not self.isRunning():
-            self.start()
-        else:
-            self._condition.wakeOne()
+            if not self.isRunning():
+                self.start()
 
     def run(self):
         while not self.abort:
@@ -147,17 +152,20 @@ class FFTWorker(QThread):
                 backtransform_phase = self.phase_shift_center(backtransform_phase)
                 self.blobs.emit(1)
                 self.clearCircles.emit()
-                self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
                 self.fft.emit(transform_abs)
                 self.backtransform.emit(backtransform_abs)
                 self.phase.emit(backtransform_phase)
+                self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
 
             # see if new data is available, go to sleep if not
-            self._mutex.lock()
-            data_available = self.frame is not None and self.parameters is not None
-            if not data_available:
-                self._condition.wait(self._mutex)
-            self._mutex.unlock()
+            while True:
+                self._mutex.lock()
+                data_available = self.frame is not None and self.parameters is not None
+                self._mutex.unlock()
+                if not data_available:
+                    QThread.msleep(self.time_interval)
+                else:
+                    break
 
     def phase_shift_center(self, phase):
         center_x = int(phase.shape[0] / 2 - 1)
@@ -213,7 +221,6 @@ class FFTPlugin2(Plugin):
         method_box = QComboBox()
         method_box.addItem("dog")
         method_box.addItem("log")
-        method_box.addItem("doh")
         group_box = QGroupBox("method")
         layout = QHBoxLayout()
         layout.addWidget(method_box)

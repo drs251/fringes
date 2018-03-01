@@ -26,7 +26,7 @@ class PluginLoader(QObject):
         self.plugins = []
 
         # find candidates for plugins
-        for file in os.listdir("./" + self._plugin_folder):
+        for file in sorted(os.listdir("./" + self._plugin_folder)):
             if file.endswith(".py"):
                 name = os.path.splitext(file)[0]
 
