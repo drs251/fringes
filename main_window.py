@@ -67,8 +67,6 @@ class MainWindow(QMainWindow):
         self.image_item = pg.ImageItem()
         self.image_item.setOpts(axisOrder='row-major')
         self.plot_box.addItem(self.image_item)
-        self.ui.graphicsView.ci.layout.setContentsMargins(0, 0, 0, 0)
-        self.ui.graphicsView.ci.layout.setSpacing(0)
 
         self.roi = None
         self.ui.selectDataButton.toggled.connect(self.show_roi)

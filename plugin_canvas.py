@@ -20,7 +20,7 @@ class PluginCanvas(QWidget):
         # a place to put plots
         self.layoutWidget = pg.GraphicsLayoutWidget()
         self.layoutWidget.setBackground(None)
-        pg.setConfigOptions(antialias=True, background=None, foreground='k')
+        pg.setConfigOptions(antialias=True, background=None, foreground='w')
 
         self.active_checkbox = QCheckBox("active")
         self.active_checkbox.toggled.connect(self.active)
