@@ -90,6 +90,7 @@ class RecorderWorker(QObject):
         self.imagesSaved.emit("saving...")
         try:
             self._array.encoding['zlib'] = True
+            self._array.attrs["frame_rate"] = self._rate
             if os.path.isfile(self._filename):
                 os.remove(self._filename)
             self._array.to_netcdf(path=self._filename)
