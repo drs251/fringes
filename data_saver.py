@@ -1,4 +1,6 @@
+import datetime
 import numpy as np
+import sys
 import xarray as xr
 import re
 import os
@@ -91,10 +93,25 @@ class DataSaver(QObject):
 
 
 def xarray_from_frame(frame):
-    y_len, x_len = frame.shape
-    x_coords = np.arange(x_len)
-    y_coords = np.arange(y_len)[::-1]
-    xarr = xr.DataArray(frame, coords=[('y_pixels', y_coords), ('x_pixels', x_coords)], name="intensity")
+    xarr = xr.DataArray(frame, dims=["y", "x"], name="intensity")
     xarr.attrs["units"] = "arb. u."
+    xarr.attrs["time"] = datetime.datetime.now().isoformat()
     xarr.encoding['zlib'] = True
+    # if there is a calibration file, add calibrated coordinates
+    try:
+        with open("calibration.txt", "r") as file:
+            px_per_unit = float(file.readline().strip())
+            unit = file.readline().strip()
+            ly, lx = frame.shape
+            x_span = lx / px_per_unit / 2
+            y_span = ly / px_per_unit / 2
+            x_coords = np.linspace(-x_span, x_span, lx)
+            y_coords = np.linspace(-y_span, y_span, ly)[::-1]
+            xarr.coords["x_pos"] = ("x", x_coords)
+            xarr.x_pos.attrs["units"] = unit
+            xarr.coords["y_pos"] = ("y", y_coords)
+            xarr.y_pos.attrs["units"] = unit
+            xarr = xarr.swap_dims({"x": "x_pos", "y": "y_pos"})
+    except FileNotFoundError:
+        print("Calibration file not found", sys.stderr)
     return xarr

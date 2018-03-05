@@ -61,12 +61,12 @@ class RecorderWorker(QObject):
                     array = xarray_from_frame(self._temp_array.mean(axis=2))
                 self._temp_array = None
                 self._current_average = 0
-                array = array.expand_dims("sequence_number")
-                array.coords["sequence_number"] = [self._images_recorded]
+                array = array.expand_dims("index")
+                array.coords["index"] = [self._images_recorded]
                 if self._array is None:
                     self._array = array
                 else:
-                    self._array = xr.concat([self._array, array], "sequence_number")
+                    self._array = xr.concat([self._array, array], "index")
                 self._images_recorded += 1
                 self.imagesRecorded.emit(self._images_recorded)
                 print("FRAME {} of {}".format(self._images_recorded, self._total_images))
@@ -89,8 +89,9 @@ class RecorderWorker(QObject):
         self.message.emit("writing images...")
         self.imagesSaved.emit("saving...")
         try:
-            self._array.encoding['zlib'] = True
             self._array.attrs["frame_rate"] = self._rate
+            self._array.attrs["time"] = datetime.datetime.now().isoformat()
+            self._array.encoding['zlib'] = True
             if os.path.isfile(self._filename):
                 os.remove(self._filename)
             self._array.to_netcdf(path=self._filename)
