@@ -16,29 +16,25 @@ class SaveNameGenerator(QObject):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._prev_name = ""
+        self.prev_name = ""
         self._pattern = re.compile(r"^(.*?)(\d+)(.\w+)?$")
 
     @pyqtProperty("QString", notify=nextNameChanged)
     def next_name(self):
-        match = self._pattern.match(self._prev_name)
+        match = self._pattern.match(self.prev_name)
 
         if match is not None:
             try:
                 number = match.group(2)
                 new_value = int(number) + 1
                 new_number = str(new_value).zfill(len(number))
-                new_name = self._pattern.sub(r"\1{}\3", self._prev_name).format(new_number)
+                new_name = self._pattern.sub(r"\1{}\3", self.prev_name).format(new_number)
             except:
                 qDebug("Error generating new file name.")
                 new_name = ""
             return new_name
         else:
             return ""
-
-    @pyqtSlot(str)
-    def set_prev_name(self, name):
-        self._prev_name = name
 
 
 class DataSaver(QObject):
@@ -58,13 +54,18 @@ class DataSaver(QObject):
 
         filter_netcdf = "netCDF file (*.nc)"
         filter_png = "png file (*.png)"
-        filename, filter = QFileDialog.getSaveFileName(caption="Save image", directory=self.name_generator.next_name,
-                                                       filter="{};;{}".format(filter_netcdf, filter_png),
-                                                       options=QFileDialog.DontUseNativeDialog)
+        name = self.name_generator.next_name
+        if self.name_generator.prev_name.endswith(".png"):
+            file_filter = "{};;{}".format(filter_png, filter_netcdf)
+        else:
+            file_filter = "{};;{}".format(filter_netcdf, filter_png)
+        filename, file_filter = QFileDialog.getSaveFileName(caption="Save image", directory=name,
+                                                            filter=file_filter,
+                                                            options=QFileDialog.DontUseNativeDialog)
         try:
             if filename == "":
                 raise ValueError()
-            if filter == filter_netcdf:
+            if file_filter == filter_netcdf:
                 if not filename.endswith(".nc"):
                     filename += ".nc"
 
@@ -72,7 +73,7 @@ class DataSaver(QObject):
                 if os.path.isfile(filename):
                     os.remove(filename)
                 xarr.to_netcdf(path=filename)
-            elif filter == filter_png:
+            elif file_filter == filter_png:
                 if not filename.endswith(".png"):
                     filename += ".png"
                 if os.path.isfile(filename):
@@ -81,7 +82,7 @@ class DataSaver(QObject):
             else:
                 raise ValueError()
 
-            self.name_generator.set_prev_name(filename)
+            self.name_generator.prev_name = filename
             self.message.emit("{} successfully saved.".format(filename))
 
         except ValueError:

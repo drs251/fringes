@@ -188,7 +188,7 @@ class AveragingPlugin(Plugin):
             else:
                 raise Exception()
 
-            self.name_generator.set_prev_name(filename)
+            self.name_generator.prev_name = filename
         except:
             self.message.emit("Image not saved!")
 
