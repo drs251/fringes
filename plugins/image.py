@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QThread, QObject, pyqtSignal, qDebug, QMutex, QWaitCondition
-from PyQt5.QtWidgets import QHBoxLayout, QWidget, QCheckBox, QSpinBox, QLabel
+from PyQt5.QtWidgets import QHBoxLayout, QWidget, QCheckBox, QSpinBox, QLabel, QDoubleSpinBox
 import pyqtgraph as pg
 import numpy as np
 import matplotlib.pyplot as plt
@@ -60,6 +60,7 @@ class Worker(QThread):
 
             if homogenize:
                 frame = vtc.highpass(frame, sigma, blur)
+                #frame = np.uint16(np.float32(frame) / np.float32(frame.max()) * 255)
 
             # update the user interface:
             self.result.emit(frame)
@@ -91,14 +92,16 @@ class PolarizationPlugin(Plugin):
         self.layout.addStretch(1)
         self.sigmaLabel = QLabel("sigma: ")
         self.layout.addWidget(self.sigmaLabel)
-        self.sigmaBox = QSpinBox()
+        self.sigmaBox = QDoubleSpinBox()
+        self.sigmaBox.setSingleStep(0.2)
         self.sigmaBox.setValue(4)
         self.layout.addWidget(self.sigmaBox)
         self.layout.addStretch(1)
         self.blurLabel = QLabel("blur: ")
         self.layout.addWidget(self.blurLabel)
-        self.blurBox = QSpinBox()
-        self.blurBox.setValue(0)
+        self.blurBox = QDoubleSpinBox()
+        self.blurBox.setValue(1)
+        self.blurBox.setSingleStep(0.2)
         self.layout.addWidget(self.blurBox)
         self.widget = QWidget()
         self.widget.setLayout(self.layout)
