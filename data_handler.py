@@ -49,7 +49,7 @@ class DataHandler(QObject):
 
         # this limits the global frame rate in this program:
         self.last_frame_time = time.time()
-        self.frame_interval = 0.2
+        self.frame_interval = 0.1
 
     @pyqtSlot(Camera)
     def change_camera(self, camera):
