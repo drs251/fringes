@@ -31,6 +31,7 @@ class FFTWorker(QThread):
     circle = pyqtSignal(tuple, int, 'QString')
     clearCircles = pyqtSignal()
     blob_position = pyqtSignal(int, int, float)
+    pixel_period = pyqtSignal(float)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -46,7 +47,6 @@ class FFTWorker(QThread):
     def processFrame(self, frame, parameters):
         # limit frame rate to keep interface responsive
         if time.time() > self.last_time + self.time_interval:
-            print("sending frame")
             self.last_time = time.time()
             self._mutex.lock()
             self.frame = frame
@@ -125,6 +125,7 @@ class FFTWorker(QThread):
                         shifted_transform = vtc.apply_window(shifted_transform)
                     backtransform, backtransform_abs, backtransform_phase = vtc.inv_fourier_transform(shifted_transform)
                     backtransform_phase = self.phase_shift_center(backtransform_phase)
+                    self.calculate_period(main_blob[0], main_blob[1], transform.shape)
                 else:
                     backtransform_abs = np.zeros_like(transform_abs)
                     backtransform_phase = backtransform_abs
@@ -156,6 +157,7 @@ class FFTWorker(QThread):
                 self.backtransform.emit(backtransform_abs)
                 self.phase.emit(backtransform_phase)
                 self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
+                self.calculate_period(main_blob[0], main_blob[1], transform.shape)
 
             # see if new data is available, go to sleep if not
             while True:
@@ -173,6 +175,16 @@ class FFTWorker(QThread):
         shift = phase[center_x, center_y]
         phase = (phase + 1 + shift) % 2 - 1
         return phase
+
+    def calculate_period(self, blob_x, blob_y, shape):
+        x = abs(blob_x - shape[0] / 2)
+        y = abs(blob_y - shape[1] / 2)
+        r = np.sqrt(x**2 + y**2)
+        try:
+            period = 1 / (r / np.max(shape))
+            self.pixel_period.emit(period)
+        except RuntimeWarning:
+            pass
 
 
 class FFTPlugin2(Plugin):
@@ -298,8 +310,15 @@ class FFTPlugin2(Plugin):
         self.blob_boxes["r"].setDecimals(1)
         self.blob_boxes["r"].setMaximum(60)
 
+        label_layout = QHBoxLayout()
         self.blob_label = QLabel("Blobs found: #")
-        self.canvas.layout.insertWidget(3, self.blob_label)
+        self.blob_label.setMinimumWidth(150)
+        label_layout.addWidget(self.blob_label)
+        self.period_label = QLabel("Fringe period: # px")
+        self.period_label.setMinimumWidth(150)
+        label_layout.addWidget(self.period_label)
+        label_layout.addStretch(1)
+        self.canvas.layout.insertLayout(3, label_layout)
 
         # some image plots:
         viridis = generatePgColormap('viridis')
@@ -338,6 +357,7 @@ class FFTPlugin2(Plugin):
         self.workerThread.phase.connect(self.setPhase)
         self.workerThread.blobs.connect(self.setBlobsLabel)
         self.workerThread.blob_position.connect(self.setBlobCoords)
+        self.workerThread.pixel_period.connect(self.setFringePeriod)
 
     def plotCircle(self, origin, radius, color_name):
         if color_name == "green":
@@ -371,6 +391,9 @@ class FFTPlugin2(Plugin):
         self.blob_boxes["x"].setValue(x)
         self.blob_boxes["y"].setValue(y)
         self.blob_boxes["r"].setValue(r)
+
+    def setFringePeriod(self, period):
+        self.period_label.setText("Fringe period: {:.1f} px".format(period))
 
     @pyqtSlot(np.ndarray)
     def process_clipped_ndarray_bw(self, array: np.ndarray):
