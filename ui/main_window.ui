@@ -50,32 +50,7 @@
         <item>
          <widget class="QWidget" name="bottom_settings_widget" native="true">
           <layout class="QGridLayout" name="gridLayout">
-           <item row="0" column="0" colspan="2">
-            <widget class="QWidget" name="camSettingsWidget" native="true"/>
-           </item>
            <item row="0" column="2" rowspan="2">
-            <widget class="QGroupBox" name="zoomingGroupBox">
-             <property name="title">
-              <string>zooming</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_5">
-              <item>
-               <widget class="QPushButton" name="zoomButton">
-                <property name="text">
-                 <string>zoom</string>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="0" column="3" rowspan="2">
             <widget class="QGroupBox" name="dataSelectionGroupBox">
              <property name="title">
               <string>data selection</string>
@@ -100,6 +75,9 @@
               </item>
              </layout>
             </widget>
+           </item>
+           <item row="0" column="0" colspan="2">
+            <widget class="QWidget" name="camSettingsWidget" native="true"/>
            </item>
            <item row="1" column="0">
             <widget class="QProgressBar" name="progressBar">

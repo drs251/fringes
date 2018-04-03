@@ -37,19 +37,6 @@ class Ui_MainWindow(object):
         self.gridLayout = QtWidgets.QGridLayout(self.bottom_settings_widget)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.gridLayout.setObjectName("gridLayout")
-        self.camSettingsWidget = QtWidgets.QWidget(self.bottom_settings_widget)
-        self.camSettingsWidget.setObjectName("camSettingsWidget")
-        self.gridLayout.addWidget(self.camSettingsWidget, 0, 0, 1, 2)
-        self.zoomingGroupBox = QtWidgets.QGroupBox(self.bottom_settings_widget)
-        self.zoomingGroupBox.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
-        self.zoomingGroupBox.setObjectName("zoomingGroupBox")
-        self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.zoomingGroupBox)
-        self.verticalLayout_5.setObjectName("verticalLayout_5")
-        self.zoomButton = QtWidgets.QPushButton(self.zoomingGroupBox)
-        self.zoomButton.setCheckable(True)
-        self.zoomButton.setObjectName("zoomButton")
-        self.verticalLayout_5.addWidget(self.zoomButton)
-        self.gridLayout.addWidget(self.zoomingGroupBox, 0, 2, 2, 1)
         self.dataSelectionGroupBox = QtWidgets.QGroupBox(self.bottom_settings_widget)
         self.dataSelectionGroupBox.setObjectName("dataSelectionGroupBox")
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.dataSelectionGroupBox)
@@ -61,7 +48,10 @@ class Ui_MainWindow(object):
         self.resetSelectDataButton = QtWidgets.QPushButton(self.dataSelectionGroupBox)
         self.resetSelectDataButton.setObjectName("resetSelectDataButton")
         self.verticalLayout_6.addWidget(self.resetSelectDataButton)
-        self.gridLayout.addWidget(self.dataSelectionGroupBox, 0, 3, 2, 1)
+        self.gridLayout.addWidget(self.dataSelectionGroupBox, 0, 2, 2, 1)
+        self.camSettingsWidget = QtWidgets.QWidget(self.bottom_settings_widget)
+        self.camSettingsWidget.setObjectName("camSettingsWidget")
+        self.gridLayout.addWidget(self.camSettingsWidget, 0, 0, 1, 2)
         self.progressBar = QtWidgets.QProgressBar(self.bottom_settings_widget)
         self.progressBar.setEnabled(False)
         self.progressBar.setProperty("value", 0)
@@ -130,8 +120,6 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.zoomingGroupBox.setTitle(_translate("MainWindow", "zooming"))
-        self.zoomButton.setText(_translate("MainWindow", "zoom"))
         self.dataSelectionGroupBox.setTitle(_translate("MainWindow", "data selection"))
         self.selectDataButton.setText(_translate("MainWindow", "select"))
         self.resetSelectDataButton.setText(_translate("MainWindow", "reset"))
@@ -147,13 +135,3 @@ class Ui_MainWindow(object):
 
 from pyqtgraph import GraphicsLayoutWidget
 import resources_rc
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
-

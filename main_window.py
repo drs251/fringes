@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
 
         self.ui.graphicsView.setBackground(pg.mkColor(0.3))
-        self.plot_box = self.ui.graphicsView.addViewBox(row=1, col=1, lockAspect=True, enableMouse=False, invertY=True)
+        self.plot_box = self.ui.graphicsView.addViewBox(row=1, col=1, lockAspect=True, enableMouse=True, invertY=True)
         self.image_item = pg.ImageItem()
         self.image_item.setOpts(axisOrder='row-major')
         self.plot_box.addItem(self.image_item)
@@ -94,7 +94,6 @@ class MainWindow(QMainWindow):
         self.ui.actionTune_camera_parameters.triggered.connect(self.tune_pid)
 
         self.ui.actionShow_Settings.toggled.connect(self.show_settings)
-        self.ui.zoomButton.toggled.connect(self.enable_zoom)
 
         self.ui.actionDraw_lines.toggled.connect(self.draw_lines)
         self.hline = None
@@ -164,12 +163,6 @@ class MainWindow(QMainWindow):
 
             rect = QRect(pos.x(), pos.y(), size.x(), size.y())
             self.data_handler.set_clip_size(rect)
-
-    @pyqtSlot(bool)
-    def enable_zoom(self, enable):
-        self.plot_box.setMouseEnabled(enable, enable)
-        if enable:
-            self.show_message("Scroll up or down on image to zoom. Right-click to reset.")
 
     @pyqtSlot(bool)
     def draw_lines(self, draw):

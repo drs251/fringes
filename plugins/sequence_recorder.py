@@ -267,7 +267,7 @@ class RecorderPlugin(Plugin):
         self.total_time_label.setText("Total time: {} ({} s)".format(datetime.timedelta(seconds=seconds), seconds))
 
     @pyqtSlot(np.ndarray)
-    def process_ndarray_bw(self, array: np.ndarray):
+    def process_clipped_ndarray_bw(self, array: np.ndarray):
         self.frameAvailable.emit(array)
 
     def chooseFolder(self):
