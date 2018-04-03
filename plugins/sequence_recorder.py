@@ -69,7 +69,7 @@ class RecorderWorker(QObject):
                     self._array = xr.concat([self._array, array], "index")
                 self._images_recorded += 1
                 self.imagesRecorded.emit(self._images_recorded)
-                print("FRAME {} of {}".format(self._images_recorded, self._total_images))
+                # print("FRAME {} of {}".format(self._images_recorded, self._total_images))
                 if self._images_recorded >= self._total_images:
                     self.stopRecording()
                 else:
@@ -82,7 +82,7 @@ class RecorderWorker(QObject):
         else:
             self._temp_array = np.dstack((self._temp_array, frame))
         self._current_average += 1
-        print("recorded average {} of {}".format(self._current_average, self._total_averages))
+        # print("recorded average {} of {}".format(self._current_average, self._total_averages))
 
 
     def saveArray(self):

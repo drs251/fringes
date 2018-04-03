@@ -85,8 +85,8 @@ class DataSaver(QObject):
             self.name_generator.prev_name = filename
             self.message.emit("{} successfully saved.".format(filename))
 
-        except ValueError:
-            self.message.emit("Image not saved")
+        except ValueError as err:
+            self.message.emit("Image not saved: {}".format(str(err)))
 
     @pyqtSlot(np.ndarray)
     def set_array(self, array):
