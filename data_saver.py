@@ -100,7 +100,7 @@ def xarray_from_frame(frame):
     xarr.encoding['zlib'] = True
     # if there is a calibration file, add calibrated coordinates
     try:
-        with open("calibration.txt", "r") as file:
+        with open("calibration.txt", "r", encoding="utf-8") as file:
             px_per_unit = float(file.readline().strip())
             unit = file.readline().strip()
             ly, lx = frame.shape
