@@ -103,8 +103,8 @@ def xarray_from_frame(frame):
             x_span = lx / px_per_unit / 2
             y_span = ly / px_per_unit / 2
             x_coords = np.linspace(-x_span, x_span, lx)
-            y_coords = np.linspace(-y_span, y_span, ly)[::-1]
-            xarr = xr.DataArray(frame, coords=[("y", y_coords), ("x", x_coords)], name="intensity")
+            y_coords = np.linspace(-y_span, y_span, ly)
+            xarr = xr.DataArray(frame[::-1], coords=[("y", y_coords), ("x", x_coords)], name="intensity")
             xarr.x.attrs["units"] = unit
             xarr.y.attrs["units"] = unit
     except FileNotFoundError:
