@@ -53,6 +53,8 @@ class RecorderWorker(QObject):
                     self.record_average(frame)
             else:
                 # time for the next step:
+                if self._temp_array is None:
+                    return
                 if len(self._temp_array.shape) < 3:
                     # only one average:
                     array = xarray_from_frame(self._temp_array)
