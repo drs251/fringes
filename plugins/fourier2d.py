@@ -24,6 +24,7 @@ def generatePgColormap(cm_name):
 class FFTWorker(QThread):
 
     blobs = pyqtSignal(int)
+    orig = pyqtSignal(np.ndarray)
     real = pyqtSignal(np.ndarray)
     fft = pyqtSignal(np.ndarray)
     backtransform = pyqtSignal(np.ndarray)
@@ -140,6 +141,7 @@ class FFTWorker(QThread):
                     if found_blobs:
                         self.circle.emit((main_blob[0], main_blob[1]), main_blob[2], 'green')
                         self.blob_position.emit(main_blob[0], main_blob[1], main_blob[2])
+                self.orig.emit(data)
                 self.fft.emit(transform_abs)
                 self.backtransform.emit(backtransform_abs)
                 self.phase.emit(backtransform_phase)
@@ -153,6 +155,7 @@ class FFTWorker(QThread):
                 backtransform_phase = self.phase_shift_center(backtransform_phase)
                 self.blobs.emit(1)
                 self.clearCircles.emit()
+                self.orig.emit(data)
                 self.fft.emit(transform_abs)
                 self.backtransform.emit(backtransform_abs)
                 self.phase.emit(backtransform_phase)
@@ -325,6 +328,13 @@ class FFTPlugin2(Plugin):
         inferno = generatePgColormap('inferno')
         magma = generatePgColormap('magma')
 
+        self.origplot = self.layoutWidget.addPlot(title="Original")
+        self.origplot.setAspectLocked()
+        self.origplot.showAxis('bottom', False)
+        self.origplot.showAxis('left', False)
+        self.origimage = pg.ImageItem()
+        self.origplot.addItem(self.origimage)
+
         self.fftplot = self.layoutWidget.addPlot(title="FFT")
         self.fftplot.setAspectLocked()
         self.fftplot.showAxis('bottom', False)
@@ -352,6 +362,7 @@ class FFTPlugin2(Plugin):
         self.frameAvailable.connect(self.workerThread.processFrame)
         self.workerThread.clearCircles.connect(self.clearCircles)
         self.workerThread.circle.connect(self.plotCircle)
+        self.workerThread.orig.connect(self.setOrig)
         self.workerThread.fft.connect(self.setFft)
         self.workerThread.backtransform.connect(self.setBacktransform)
         self.workerThread.phase.connect(self.setPhase)
@@ -374,6 +385,9 @@ class FFTPlugin2(Plugin):
         for circle in self.circle_plots:
             self.fftplot.removeItem(circle)
         self.circle_plots = []
+
+    def setOrig(self, orig):
+        self.origimage.setImage(orig)
 
     def setFft(self, fft):
         self.fftimage.setImage(fft)

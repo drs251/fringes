@@ -111,7 +111,7 @@ class PolarizationPlugin(Plugin):
         # some image plots:
         magma = generatePgColormap('magma')
 
-        self.main_plot = self.layoutWidget.addViewBox(invertY=True)
+        self.main_plot = self.layoutWidget.addPlot(invertY=True)
         self.main_plot.setAspectLocked()
         self.mainImage = pg.ImageItem(lut=magma.getLookupTable())
         self.mainImage.setOpts(axisOrder="row-major")
